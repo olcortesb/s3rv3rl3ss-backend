@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: s3rv3rl3ss-backend - Collects AWS serverless service data and commits to repo
+Description: s3rv3rl3ss-backend - Collects AWS serverless data daily and commits to repo
 
 Parameters:
   Schedule:
     Type: String
-    Default: rate(1 day)
-    Description: EventBridge schedule for data collection
+    Default: cron(0 6 * * ? *)
+    Description: EventBridge schedule for data collection (daily at 6:00 UTC)
   GitRepoUrl:
     Type: String
     Description: HTTPS Git repo URL (e.g. https://github.com/user/s3rv3rl3ss.git)
@@ -63,7 +63,7 @@ Resources:
         ScheduleEvent:
           Type: Schedule
           Properties:
-            Schedule: !Ref Schedule
+            Schedule: cron(0 6 * * ? *)
             Description: Triggers daily data collection
             Enabled: true
 

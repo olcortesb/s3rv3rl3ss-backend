@@ -4,31 +4,13 @@ Data pipeline that collects AWS serverless service quotas, limits and metadata �
 
 ## How it works
 
-```
-EventBridge (daily) → CollectorFunction → S3 (JSON) → EventBridge → CommitterFunction → Git push → Amplify auto-deploy
-```
+![alt text](image.png)
 
 1. **EventBridge** triggers `CollectorFunction` on a daily schedule
 2. **CollectorFunction** queries the AWS Service Quotas API + static limits → writes `services-aws.json` to S3
 3. **S3 ObjectCreated** event → **EventBridge** → triggers `CommitterFunction`
 4. **CommitterFunction** clones the frontend repo, updates `src/data/services-aws.json`, commits and pushes
 5. **AWS Amplify** detects the push and auto-deploys the frontend
-
-## Project structure
-
-```
-src/
-  collector/
-    handler.py       # Lambda: fetches quotas from API, writes JSON to S3
-    services.py      # Service definitions (SERVICES + DISABLED_SERVICES)
-  committer/
-    handler.py       # Lambda: clones repo, commits JSON, pushes
-layers/
-  git/               # Lambda layer with git binary
-scripts/
-  build.sh           # ECR login + sam build + optional deploy
-events/              # Test event payloads for local invocation
-```
 
 ## Adding a service
 
