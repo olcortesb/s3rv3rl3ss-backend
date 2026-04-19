@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import xml.etree.ElementTree as ET
 from datetime import date
 from urllib.request import urlopen
@@ -15,7 +16,53 @@ BUCKET = os.environ['BUCKET_NAME']
 S3_KEY = os.environ['S3_KEY']
 
 NEWS_FEED_URL = "https://aws.amazon.com/about-aws/whats-new/recent/feed/"
+RUNTIMES_URL = "https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.md"
 NEWS_LIMIT = 5
+
+
+def fetch_runtimes():
+    try:
+        with urlopen(RUNTIMES_URL, timeout=10) as resp:
+            content = resp.read().decode('utf-8')
+        runtimes = []
+        in_table = False
+        today = date.today()
+        for line in content.split('\n'):
+            if '| Name | Identifier |' in line:
+                in_table = True
+                continue
+            if in_table and line.startswith('| ---'):
+                continue
+            if in_table and line.startswith('|'):
+                cols = [c.strip() for c in line.split('|')[1:-1]]
+                if len(cols) >= 4:
+                    name = cols[0].strip()
+                    identifier = cols[1].replace('`', '').strip()
+                    eol_str = cols[3].strip()
+                    if not name or not identifier:
+                        continue
+                    # Parse EOL date
+                    eol_date = None
+                    try:
+                        parts = eol_str.replace(',', '').split()
+                        months = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06',
+                                  'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}
+                        if len(parts) == 3 and parts[0] in months:
+                            eol_date = f"{parts[2]}-{months[parts[0]]}-{parts[1].zfill(2)}"
+                    except Exception:
+                        pass
+                    status = 'deprecated' if eol_date and eol_date < today.isoformat() else 'active'
+                    entry = {"name": name, "identifier": identifier, "status": status}
+                    if eol_date:
+                        entry["eol"] = eol_date
+                    runtimes.append(entry)
+            elif in_table and not line.startswith('|'):
+                break
+        print(f"[runtimes] Got {len(runtimes)} runtimes from docs")
+        return runtimes
+    except Exception as e:
+        print(f"[runtimes] Error fetching: {e}")
+        return None
 
 UNIT_MAP = {
     "None": "", "Count": "",
@@ -104,7 +151,7 @@ def fetch_news(keywords):
         return []
 
 
-def build_service(svc):
+def build_service(svc, live_runtimes=None):
     entry = {
         "id": svc["id"],
         "enabled": True,
@@ -125,7 +172,10 @@ def build_service(svc):
         entry["limits"] = limits
 
     if svc.get("runtimes"):
-        entry["runtimes"] = svc["runtimes"]
+        if live_runtimes:
+            entry["runtimes"] = live_runtimes
+        else:
+            entry["runtimes"] = svc["runtimes"]
 
     if svc.get("news_keywords"):
         news = fetch_news(svc["news_keywords"])
@@ -137,7 +187,10 @@ def build_service(svc):
 
 
 def lambda_handler(event, context):
-    services = [build_service(svc) for svc in SERVICES]
+    # Fetch runtimes once for all services that need it
+    live_runtimes = fetch_runtimes()
+
+    services = [build_service(svc, live_runtimes) for svc in SERVICES]
 
     output = {
         "lastUpdated": date.today().isoformat(),

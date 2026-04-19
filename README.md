@@ -12,6 +12,14 @@ Data pipeline that collects AWS serverless service quotas, limits and metadata â
 4. **CommitterFunction** clones the frontend repo, updates `src/data/services-aws.json`, commits and pushes
 5. **AWS Amplify** detects the push and auto-deploys the frontend
 
+## Data sources
+
+The `CollectorFunction` gathers data from three sources per service:
+
+- **Quotas**: [Service Quotas API](https://docs.aws.amazon.com/servicequotas/2019-06-24/apireference/API_ListServiceQuotas.html) (`list_service_quotas` with fallback to `list_aws_default_service_quotas`)
+- **News**: [AWS What's New RSS](https://aws.amazon.com/about-aws/whats-new/recent/feed/) filtered by service keywords (last 5 per service)
+- **Runtimes**: Scraped from the [Lambda runtimes docs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.md) markdown page, includes identifier, status and deprecation date
+
 ## Adding a service
 
 Edit `src/collector/services.py` â€” move the service from `DISABLED_SERVICES` to `SERVICES`, then build and deploy.
