@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: s3rv3rl3ss-backend - Collects AWS serverless service data and commits to repo
+
+Parameters:
+  Schedule:
+    Type: String
+    Default: rate(1 day)
+    Description: EventBridge schedule for data collection
+  GitRepoUrl:
+    Type: String
+    Description: HTTPS Git repo URL (e.g. https://github.com/user/s3rv3rl3ss.git)
+  GitSecretArn:
+    Type: String
+    Description: Secrets Manager ARN containing git credentials (token)
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 300
+    MemorySize: 256
+    Architectures:
+      - arm64
+
+Resources:
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub s3rv3rl3ss-data-${AWS::AccountId}
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: CleanOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+      VersioningConfiguration:
+        Status: Enabled
+
+  CollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/collector/
+      Description: Collects AWS serverless quotas/limits and news, writes JSON to S3
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/services-aws.json
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - servicequotas:GetServiceQuota
+                - servicequotas:ListServiceQuotas
+                - servicequotas:ListAWSDefaultServiceQuotas
+              Resource: '*'
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref Schedule
+            Description: Triggers daily data collection
+            Enabled: true
+
+  CommitterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/committer/
+      Description: Commits updated JSON to git repo when S3 object is created
+      Layers:
+        - !Ref GitLayer
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/services-aws.json
+          GIT_REPO_URL: !Ref GitRepoUrl
+          GIT_SECRET_ARN: !Ref GitSecretArn
+          DEST_PATH: src/data/services-aws.json
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DataBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref GitSecretArn
+      Events:
+        S3Event:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - Object Created
+              detail:
+                bucket:
+                  name:
+                    - !Ref DataBucket
+                object:
+                  key:
+                    - prefix: data/
+                    - suffix: .json
+
+  GitLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: git-binary
+      Description: Git binary for Lambda
+      ContentUri: layers/git/
+      CompatibleRuntimes:
+        - python3.12
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      BuildMethod: makefile
+      BuildArchitecture: arm64
+
+Outputs:
+  DataBucketName:
+    Value: !Ref DataBucket
+  CollectorFunctionArn:
+    Value: !GetAtt CollectorFunction.Arn
+  CommitterFunctionArn:
+    Value: !GetAtt CommitterFunction.Arn

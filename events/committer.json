@@ -1,0 +1,20 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2025-01-01T00:00:00.000Z",
+      "eventName": "ObjectCreated:Put",
+      "s3": {
+        "bucket": {
+          "name": "s3rv3rl3ss-data-123456789012"
+        },
+        "object": {
+          "key": "data/services-aws.json",
+          "size": 1024
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "s3rv3rl3ss-backend"
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+region = "us-east-1"
+parameter_overrides = [
+    "GitRepoUrl=REPLACE_ME",
+    "GitSecretArn=REPLACE_ME",
+]
+
+[default.build.parameters]
+use_container = true
