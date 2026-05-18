@@ -245,3 +245,23 @@ aws s3 rm s3://s3rv3rl3ss-data-<account-id> --recursive --region us-east-1
 # Delete the stack
 aws cloudformation delete-stack --stack-name s3rv3rl3ss-backend --region us-east-1
 ```
+
+
+## Amplify metrics
+
+```bash
+# List Amplify apps to get the App ID
+aws amplify list-apps --region us-east-1 --query "apps[].[appId,name]" --output table
+
+# Requests in the last 7 days (daily)
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/AmplifyHosting \
+  --metric-name Requests \
+  --dimensions Name=App,Value=<app-id> \
+  --start-time $(date -u -v-7d +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 86400 \
+  --statistics Sum \
+  --region us-east-1 \
+  --output table
+```

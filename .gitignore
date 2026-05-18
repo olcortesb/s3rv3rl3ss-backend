@@ -219,3 +219,9 @@ samconfig.local.toml
 .env.local
 *.pem
 *.key
+
+# Local venv
+.venv/
+
+# Exploration scripts
+scripts/explore_*.py

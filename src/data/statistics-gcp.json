@@ -1,0 +1,47 @@
+{
+  "summary": {
+    "totalServices": 11,
+    "totalNews": 70,
+    "totalRuntimes": 17,
+    "activeRuntimes": 17,
+    "deprecatedRuntimes": 0
+  },
+  "topServices": {
+    "mostNews": {
+      "id": "cloud-run",
+      "name": "Cloud Run",
+      "count": 10
+    }
+  },
+  "byCategory": [
+    {
+      "category": "Integration",
+      "count": 3
+    },
+    {
+      "category": "Compute",
+      "count": 2
+    },
+    {
+      "category": "Messaging",
+      "count": 2
+    },
+    {
+      "category": "Database",
+      "count": 1
+    },
+    {
+      "category": "Analytics",
+      "count": 1
+    },
+    {
+      "category": "Storage",
+      "count": 1
+    },
+    {
+      "category": "Networking",
+      "count": 1
+    }
+  ],
+  "lastUpdated": "2026-05-11"
+}

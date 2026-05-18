@@ -44,7 +44,7 @@ Resources:
     Properties:
       Handler: handler.lambda_handler
       CodeUri: src/collector/
-      Description: Collects AWS serverless quotas/limits and news, writes JSON to S3
+      Description: Collects AWS serverless data, quotas, pricing, news and limits
       Environment:
         Variables:
           BUCKET_NAME: !Ref DataBucket
@@ -58,13 +58,59 @@ Resources:
                 - servicequotas:GetServiceQuota
                 - servicequotas:ListServiceQuotas
                 - servicequotas:ListAWSDefaultServiceQuotas
+                - pricing:GetProducts
+                - pricing:DescribeServices
               Resource: '*'
       Events:
         ScheduleEvent:
           Type: Schedule
           Properties:
             Schedule: cron(0 6 * * ? *)
-            Description: Triggers daily data collection
+            Description: Triggers daily AWS data collection
+            Enabled: true
+
+  GcpCollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/gcp-collector/
+      Description: Collects GCP serverless data, pricing, news and limits
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/services-gcp.json
+          STATISTICS_KEY: data/statistics-gcp.json
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(15 6 * * ? *)
+            Description: Triggers daily GCP data collection (15 min after AWS)
+            Enabled: true
+
+  AzureCollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/azure-collector/
+      Description: Collects Azure serverless data, pricing and limits
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/services-azure.json
+          STATISTICS_KEY: data/statistics-azure.json
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(30 6 * * ? *)
+            Description: Triggers daily Azure data collection (30 min after AWS)
             Enabled: true
 
   CommitterFunction:
@@ -127,5 +173,9 @@ Outputs:
     Value: !Ref DataBucket
   CollectorFunctionArn:
     Value: !GetAtt CollectorFunction.Arn
+  GcpCollectorFunctionArn:
+    Value: !GetAtt GcpCollectorFunction.Arn
+  AzureCollectorFunctionArn:
+    Value: !GetAtt AzureCollectorFunction.Arn
   CommitterFunctionArn:
     Value: !GetAtt CommitterFunction.Arn

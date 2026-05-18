@@ -1,0 +1,1094 @@
+{
+  "lastUpdated": "2026-05-11",
+  "services": [
+    {
+      "id": "cloud-run",
+      "enabled": true,
+      "name": "Cloud Run",
+      "category": "Compute",
+      "description": "Cloud Run is a fully managed compute platform that lets you deploy and scale containerized applications quickly and securely.",
+      "useCases": [
+        "Container workloads",
+        "Web apps",
+        "APIs",
+        "Microservices"
+      ],
+      "pricing": "Pay per vCPU, memory and request",
+      "pricingUrl": "https://cloud.google.com/run/pricing",
+      "url": "https://cloud.google.com/run",
+      "icon": "🚀",
+      "limits": [
+        {
+          "name": "Max instances",
+          "value": "1,000"
+        },
+        {
+          "name": "Max request timeout",
+          "value": "3,600 seconds (60 min)"
+        },
+        {
+          "name": "Max vCPU per instance",
+          "value": "8"
+        },
+        {
+          "name": "Max memory per instance",
+          "value": "32 GiB"
+        },
+        {
+          "name": "Max request body size",
+          "value": "32 MB"
+        },
+        {
+          "name": "Max response body size",
+          "value": "32 MB"
+        },
+        {
+          "name": "Max concurrent requests per instance",
+          "value": "1,000"
+        },
+        {
+          "name": "Container image size",
+          "value": "10 GiB"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-04-20",
+          "title": "Feature\nCloud Run ephemeral disk, which allows you to mount a volume that persists only for the duration of your service",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#April_20_2026"
+        },
+        {
+          "date": "2026-04-16",
+          "title": "Feature\nSupport for specifying custom CPU or concurrency targets using scaling controls is in Preview.",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#April_16_2026"
+        },
+        {
+          "date": "2026-04-15",
+          "title": "Feature\nThe Cloud Run remote MCP server, which lets agents and AI applications deploy with Cloud Run, is in General Avai",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#April_15_2026"
+        },
+        {
+          "date": "2026-04-14",
+          "title": "Feature\nSupport for worker pools is in General Availability (GA).",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#April_14_2026"
+        },
+        {
+          "date": "2026-04-13",
+          "title": "Feature\nSupport for NVIDIA RTX PRO 6000 Blackwell GPU is in General Availability.\nFor more information, see GPU support ",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#April_13_2026"
+        },
+        {
+          "date": "2026-03-25",
+          "title": "Feature\nDeploying services using a Compose file\nis in General Availability.",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#March_25_2026"
+        },
+        {
+          "date": "2026-03-17",
+          "title": "Feature\nSupport for Ruby 4.0 runtime is in General Availability.",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#March_17_2026"
+        },
+        {
+          "date": "2026-03-13",
+          "title": "Feature\nConfiguring Identity-Aware Proxy (IAP) directly on Cloud Run\nto secure your services without the need for load b",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#March_13_2026"
+        },
+        {
+          "date": "2026-03-12",
+          "title": "Feature\nSupport for Go 1.26 runtime is in General Availability.",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#March_12_2026"
+        },
+        {
+          "date": "2026-03-03",
+          "title": "Feature\nSupport for Ruby 4.0 runtime is in Preview.",
+          "url": "https://docs.cloud.google.com/run/docs/release-notes#March_03_2026"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "vCPU",
+          "price": "$0.00002400",
+          "unit": "per vCPU-second",
+          "description": "$0.00002400 per vCPU-second"
+        },
+        {
+          "label": "Memory",
+          "price": "$0.00000250",
+          "unit": "per GiB-second",
+          "description": "$0.00000250 per GiB-second"
+        },
+        {
+          "label": "Requests",
+          "price": "$0.40",
+          "unit": "per 1M requests",
+          "description": "$0.40 per million requests"
+        }
+      ]
+    },
+    {
+      "id": "cloud-run-functions",
+      "enabled": true,
+      "name": "Cloud Run Functions",
+      "category": "Compute",
+      "description": "Cloud Run Functions is a lightweight, event-driven compute solution that allows you to create small, single-purpose functions that respond to cloud events.",
+      "useCases": [
+        "Event processing",
+        "Webhooks",
+        "Data transformation",
+        "IoT backends"
+      ],
+      "pricing": "Pay per invocation, compute time and networking",
+      "pricingUrl": "https://cloud.google.com/functions/pricing",
+      "url": "https://cloud.google.com/functions",
+      "icon": "⚡",
+      "limits": [
+        {
+          "name": "Max function timeout (1st gen)",
+          "value": "540 seconds (9 min)"
+        },
+        {
+          "name": "Max function timeout (2nd gen)",
+          "value": "3,600 seconds (60 min)"
+        },
+        {
+          "name": "Max memory",
+          "value": "32 GiB"
+        },
+        {
+          "name": "Max vCPUs",
+          "value": "8"
+        },
+        {
+          "name": "Max request size (HTTP)",
+          "value": "32 MB"
+        },
+        {
+          "name": "Max response size (HTTP)",
+          "value": "32 MB"
+        },
+        {
+          "name": "Max event size",
+          "value": "512 KB"
+        },
+        {
+          "name": "Max concurrent requests per instance",
+          "value": "1,000"
+        },
+        {
+          "name": "Max instances",
+          "value": "3,000"
+        },
+        {
+          "name": "Deployment size (compressed)",
+          "value": "100 MB"
+        },
+        {
+          "name": "Deployment size (uncompressed)",
+          "value": "500 MB"
+        }
+      ],
+      "runtimes": [
+        {
+          "name": "Node.js 22",
+          "status": "active"
+        },
+        {
+          "name": "Node.js 20",
+          "status": "active"
+        },
+        {
+          "name": "Node.js 18",
+          "status": "active"
+        },
+        {
+          "name": "Python 3.12",
+          "status": "active"
+        },
+        {
+          "name": "Python 3.11",
+          "status": "active"
+        },
+        {
+          "name": "Python 3.10",
+          "status": "active"
+        },
+        {
+          "name": "Go 1.22",
+          "status": "active"
+        },
+        {
+          "name": "Go 1.21",
+          "status": "active"
+        },
+        {
+          "name": "Java 21",
+          "status": "active"
+        },
+        {
+          "name": "Java 17",
+          "status": "active"
+        },
+        {
+          "name": "Java 11",
+          "status": "active"
+        },
+        {
+          "name": ".NET 8",
+          "status": "active"
+        },
+        {
+          "name": ".NET 6",
+          "status": "active"
+        },
+        {
+          "name": "Ruby 3.3",
+          "status": "active"
+        },
+        {
+          "name": "Ruby 3.2",
+          "status": "active"
+        },
+        {
+          "name": "PHP 8.3",
+          "status": "active"
+        },
+        {
+          "name": "PHP 8.2",
+          "status": "active"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-03-17",
+          "title": "Feature\nSupport for Ruby 4.0 runtime is in General Availability.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#March_17_2026"
+        },
+        {
+          "date": "2026-03-12",
+          "title": "Feature\nSupport for Go 1.26 runtime is in General Availability.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#March_12_2026"
+        },
+        {
+          "date": "2026-03-03",
+          "title": "Feature\nSupport for Ruby 4.0 runtime is in Preview.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#March_03_2026"
+        },
+        {
+          "date": "2026-02-27",
+          "title": "Feature\nSupport for PHP 8.5 runtime is in General Availability.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#February_27_2026"
+        },
+        {
+          "date": "2026-02-24",
+          "title": "Feature\nSupport for the ability to configure Direct VPC egress for 2nd gen functions is in General Availability.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#February_24_2026"
+        },
+        {
+          "date": "2026-02-19",
+          "title": "Feature\nSupport for Go 1.26 runtime is in Preview.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#February_19_2026"
+        },
+        {
+          "date": "2026-02-18",
+          "title": "Feature\nSupport for .NET 10 runtime is in General Availability.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#February_18_2026"
+        },
+        {
+          "date": "2026-02-02",
+          "title": "Feature\nSupport for PHP 8.5 runtime is in Preview.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#February_02_2026"
+        },
+        {
+          "date": "2026-01-27",
+          "title": "Feature\nSupport for .NET 10 runtime is in Preview.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#January_27_2026"
+        },
+        {
+          "date": "2026-01-06",
+          "title": "Feature\nYou can now configure Direct VPC egress for 2nd gen functions. This support is at the Preview release level.",
+          "url": "https://docs.cloud.google.com/functions/docs/release-notes#January_06_2026"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Invocations",
+          "price": "$0.40",
+          "unit": "per 1M invocations",
+          "description": "$0.40 per million invocations"
+        },
+        {
+          "label": "Compute (GHz-second)",
+          "price": "$0.0000100",
+          "unit": "per GHz-second",
+          "description": "$0.0000100 per GHz-second"
+        },
+        {
+          "label": "Memory",
+          "price": "$0.0000025",
+          "unit": "per GB-second",
+          "description": "$0.0000025 per GB-second"
+        }
+      ]
+    },
+    {
+      "id": "firestore",
+      "enabled": true,
+      "name": "Firestore",
+      "category": "Database",
+      "description": "Firestore is a fast, fully managed, serverless, cloud-native NoSQL document database that simplifies storing, syncing, and querying data for mobile, web, and IoT apps at global scale.",
+      "useCases": [
+        "Mobile/web backends",
+        "Real-time sync",
+        "User profiles",
+        "Game state"
+      ],
+      "pricing": "Pay per document read, write, delete and storage",
+      "pricingUrl": "https://cloud.google.com/firestore/pricing",
+      "url": "https://cloud.google.com/firestore",
+      "icon": "🔥",
+      "limits": [
+        {
+          "name": "Max document size",
+          "value": "1 MiB"
+        },
+        {
+          "name": "Max field depth",
+          "value": "20 levels"
+        },
+        {
+          "name": "Max indexes per database",
+          "value": "200 composite"
+        },
+        {
+          "name": "Max writes per second per database",
+          "value": "10,000"
+        },
+        {
+          "name": "Max concurrent connections (mobile/web)",
+          "value": "1,000,000"
+        },
+        {
+          "name": "Max subcollection depth",
+          "value": "100"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Document reads",
+          "price": "$0.036",
+          "unit": "per 100K reads",
+          "description": "$0.036 per 100,000 document reads"
+        },
+        {
+          "label": "Document writes",
+          "price": "$0.108",
+          "unit": "per 100K writes",
+          "description": "$0.108 per 100,000 document writes"
+        },
+        {
+          "label": "Document deletes",
+          "price": "$0.012",
+          "unit": "per 100K deletes",
+          "description": "$0.012 per 100,000 document deletes"
+        },
+        {
+          "label": "Storage",
+          "price": "$0.108",
+          "unit": "per GiB/month",
+          "description": "$0.108 per GiB per month"
+        }
+      ]
+    },
+    {
+      "id": "bigquery",
+      "enabled": true,
+      "name": "BigQuery",
+      "category": "Analytics",
+      "description": "BigQuery is a serverless, highly scalable, and cost-effective multicloud data warehouse designed for business agility.",
+      "useCases": [
+        "Data analytics",
+        "Business intelligence",
+        "Machine learning",
+        "Geospatial analysis"
+      ],
+      "pricing": "Pay per TB scanned (on-demand) or slot-hours (capacity)",
+      "pricingUrl": "https://cloud.google.com/bigquery/pricing",
+      "url": "https://cloud.google.com/bigquery",
+      "icon": "📊",
+      "limits": [
+        {
+          "name": "Max columns per table",
+          "value": "10,000"
+        },
+        {
+          "name": "Max row size",
+          "value": "100 MB"
+        },
+        {
+          "name": "Max query length",
+          "value": "1 MB (unresolved)"
+        },
+        {
+          "name": "Max concurrent queries",
+          "value": "100"
+        },
+        {
+          "name": "Max tables per dataset",
+          "value": "Unlimited"
+        },
+        {
+          "name": "Max streaming inserts per second per table",
+          "value": "1,000,000 rows"
+        },
+        {
+          "name": "Free tier",
+          "value": "1 TB queries + 10 GB storage/month"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-05-08",
+          "title": "Announcement\nStarting August 11, 2026, the billing label for the BigQuery Data Transfer\nService SKU will be updated from",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#May_08_2026"
+        },
+        {
+          "date": "2026-05-06",
+          "title": "Feature\nYou can configure BigQuery sharing listings for multiple regions, which\nallows you to share datasets and linked ",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#May_06_2026"
+        },
+        {
+          "date": "2026-04-30",
+          "title": "Breaking\nStarting May 7, 2026, new transfer configurations that transfer data from Google Ads using the\nBigQuery Data Tr",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_30_2026"
+        },
+        {
+          "date": "2026-04-29",
+          "title": "Breaking\nStrict act-as mode\nis enforced globally for all Dataform repositories, requiring the use of a\ncustom service ac",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_29_2026"
+        },
+        {
+          "date": "2026-04-28",
+          "title": "Feature\nYou can now\ncreate materialized views over active change data capture (CDC) enabled tables.\nThis feature is gene",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_28_2026"
+        },
+        {
+          "date": "2026-04-23",
+          "title": "Change\nAn updated version of the\nSimba JDBC driver for BigQuery\nis now available.",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_23_2026"
+        },
+        {
+          "date": "2026-04-22",
+          "title": "Feature\nYou can now use the visual graph modeler in\nBigQuery Studio to define BigQuery graph nodes and edges from your\nB",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_22_2026"
+        },
+        {
+          "date": "2026-04-21",
+          "title": "Feature\nYou can now visualize BigQuery graph query results and graph\nschemas directly in\nBigQuery Studio, without the ne",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_21_2026"
+        },
+        {
+          "date": "2026-04-20",
+          "title": "Change\nStarting July 25, 2026, the BigQuery Data Transfer Service for Facebook Ads\nconnector will update the data type\nm",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_20_2026"
+        },
+        {
+          "date": "2026-04-17",
+          "title": "Feature\nUsing\nfolders\nto organize and control access to single file code assets is\ngenerally available\n(GA). In addition",
+          "url": "https://docs.cloud.google.com/bigquery/docs/release-notes#April_17_2026"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Queries (on-demand)",
+          "price": "$6.25",
+          "unit": "per TB scanned",
+          "description": "$6.25 per TB of data processed"
+        },
+        {
+          "label": "Active storage",
+          "price": "$0.020",
+          "unit": "per GB/month",
+          "description": "$0.020 per GB per month"
+        },
+        {
+          "label": "Long-term storage",
+          "price": "$0.010",
+          "unit": "per GB/month",
+          "description": "$0.010 per GB per month"
+        },
+        {
+          "label": "Streaming inserts",
+          "price": "$0.010",
+          "unit": "per 200 MB",
+          "description": "$0.010 per 200 MB"
+        }
+      ]
+    },
+    {
+      "id": "cloud-pubsub",
+      "enabled": true,
+      "name": "Cloud Pub/Sub",
+      "category": "Messaging",
+      "description": "Cloud Pub/Sub is a fully managed real-time messaging service that allows you to send and receive messages between independent applications.",
+      "useCases": [
+        "Event streaming",
+        "Data integration",
+        "Service decoupling",
+        "Log aggregation"
+      ],
+      "pricing": "Pay per data volume delivered",
+      "pricingUrl": "https://cloud.google.com/pubsub/pricing",
+      "url": "https://cloud.google.com/pubsub",
+      "icon": "📨",
+      "limits": [
+        {
+          "name": "Max message size",
+          "value": "10 MB"
+        },
+        {
+          "name": "Max attributes per message",
+          "value": "100"
+        },
+        {
+          "name": "Max attribute key size",
+          "value": "256 bytes"
+        },
+        {
+          "name": "Max attribute value size",
+          "value": "1,024 bytes"
+        },
+        {
+          "name": "Max subscriptions per topic",
+          "value": "10,000"
+        },
+        {
+          "name": "Max topics per project",
+          "value": "10,000"
+        },
+        {
+          "name": "Message retention",
+          "value": "31 days"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-04-17",
+          "title": "Feature\nThe Pub/Sub remote MCP server is\ngenerally available\n(GA).",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#April_17_2026"
+        },
+        {
+          "date": "2026-04-16",
+          "title": "Feature\nYou can stream messages from Pub/Sub directly to a\nBigtable table using\nBigtable subscriptions. This feature let",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#April_16_2026"
+        },
+        {
+          "date": "2026-04-06",
+          "title": "Feature\nPub/Sub now offers the AI Inference Single Method Transform (SMT). This SMT lets\nyou get inferences on Pub/Sub m",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#April_06_2026"
+        },
+        {
+          "date": "2026-03-13",
+          "title": "Feature\nYou can now use the Pub/Sub remote MCP server to\nmanage Pub/Sub resources. You can create, list, get, update, an",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#March_13_2026"
+        },
+        {
+          "date": "2026-01-20",
+          "title": "Feature\nPub/Sub is now available in the Bangkok region (asia-southeast3). For more\ninformation, see Cloud locations.",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#January_20_2026"
+        },
+        {
+          "date": "2025-12-29",
+          "title": "Libraries\n\nJava1.144.1 (2025-12-22)\nBug Fixes\n\nLower the Subscriber protocol version to disable the streaming pull keepa",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#December_29_2025"
+        },
+        {
+          "date": "2025-12-22",
+          "title": "Libraries\n\nPython2.34.0 (2025-12-16)\nFeatures\n\nsupport mTLS certificates when available (#1566) (24761a2f)\n\nJava1.145.0-",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#December_22_2025"
+        },
+        {
+          "date": "2025-12-15",
+          "title": "Libraries\n\nJava1.144.0 (2025-12-11)\nFeatures\n\nAdd keepalive feature to tear down streams in their absence (#2605) (99aca",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#December_15_2025"
+        },
+        {
+          "date": "2025-11-17",
+          "title": "Libraries\n\nJava1.143.1 (2025-11-13)\nBug Fixes\n\nDeflake WaiterTest (#2600) (298c8db)\ndeps: Update the Java code generator",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#November_17_2025"
+        },
+        {
+          "date": "2025-11-03",
+          "title": "Libraries\n\nPython2.32.0 (2025-10-28)\nFeatures\n\nAdds Python 3.14 support (#1512) (95a2690)\nDebug logs (#1460) (b5d4a45)\nS",
+          "url": "https://docs.cloud.google.com/pubsub/docs/release-notes#November_03_2025"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Message delivery",
+          "price": "$40.00",
+          "unit": "per TiB",
+          "description": "$40.00 per TiB of data delivered"
+        },
+        {
+          "label": "Seek-related message storage",
+          "price": "$0.27",
+          "unit": "per GiB/month",
+          "description": "$0.27 per GiB per month"
+        }
+      ]
+    },
+    {
+      "id": "cloud-tasks",
+      "enabled": true,
+      "name": "Cloud Tasks",
+      "category": "Messaging",
+      "description": "Cloud Tasks is a fully managed service that allows you to manage the execution, dispatch, and delivery of a large number of distributed tasks.",
+      "useCases": [
+        "Async task execution",
+        "Rate-limited processing",
+        "Deferred work",
+        "Webhook delivery"
+      ],
+      "pricing": "Pay per million operations",
+      "pricingUrl": "https://cloud.google.com/tasks/pricing",
+      "url": "https://cloud.google.com/tasks",
+      "icon": "📋",
+      "limits": [
+        {
+          "name": "Max task size",
+          "value": "1 MB"
+        },
+        {
+          "name": "Max queues per project",
+          "value": "10,000"
+        },
+        {
+          "name": "Max tasks per queue",
+          "value": "Unlimited"
+        },
+        {
+          "name": "Max dispatch rate per queue",
+          "value": "500/second"
+        },
+        {
+          "name": "Max task retention",
+          "value": "31 days"
+        },
+        {
+          "name": "Max concurrent dispatches per queue",
+          "value": "5,000"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Operations",
+          "price": "$0.40",
+          "unit": "per 1M operations",
+          "description": "$0.40 per million operations (first 1M free)"
+        }
+      ]
+    },
+    {
+      "id": "cloud-scheduler",
+      "enabled": true,
+      "name": "Cloud Scheduler",
+      "category": "Integration",
+      "description": "Cloud Scheduler is a fully managed enterprise-grade cron job scheduler that allows you to schedule virtually any job.",
+      "useCases": [
+        "Cron jobs",
+        "Scheduled pipelines",
+        "Periodic triggers",
+        "Batch processing"
+      ],
+      "pricing": "Pay per job per month",
+      "pricingUrl": "https://cloud.google.com/scheduler/pricing",
+      "url": "https://cloud.google.com/scheduler",
+      "icon": "⏰",
+      "limits": [
+        {
+          "name": "Max jobs per project",
+          "value": "500"
+        },
+        {
+          "name": "Max job body size",
+          "value": "1 MB"
+        },
+        {
+          "name": "Min interval",
+          "value": "1 minute"
+        },
+        {
+          "name": "Max retry attempts",
+          "value": "5"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Jobs",
+          "price": "$0.10",
+          "unit": "per job/month",
+          "description": "$0.10 per job per month (3 free)"
+        }
+      ]
+    },
+    {
+      "id": "eventarc",
+      "enabled": true,
+      "name": "Eventarc",
+      "category": "Integration",
+      "description": "Eventarc lets you build event-driven architectures by routing events from Google services, SaaS, and your own apps to targets like Cloud Run and Workflows.",
+      "useCases": [
+        "Event routing",
+        "Audit log triggers",
+        "Pub/Sub integration",
+        "Cross-service events"
+      ],
+      "pricing": "No additional charge (pay for underlying services)",
+      "pricingUrl": "https://cloud.google.com/eventarc/pricing",
+      "url": "https://cloud.google.com/eventarc",
+      "icon": "⚡",
+      "limits": [
+        {
+          "name": "Max triggers per project per region",
+          "value": "500"
+        },
+        {
+          "name": "Max channels per project per region",
+          "value": "100"
+        },
+        {
+          "name": "Max event size",
+          "value": "512 KB"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-04-22",
+          "title": "Feature\nEventarc support for\ncreating triggers\nfor direct events from Gemini Cloud Assist\nis available in Preview.",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#April_22_2026"
+        },
+        {
+          "date": "2026-02-02",
+          "title": "Change\nEventarc Standard is available in the asia-southeast3 (Bangkok, Thailand)\nregion.",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#February_02_2026"
+        },
+        {
+          "date": "2025-11-11",
+          "title": "Feature\nEventarc Advanced support for\nusing access policies to control access\nwhen publishing event messages to an Event",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#November_11_2025"
+        },
+        {
+          "date": "2025-09-24",
+          "title": "Feature\nEventarc Advanced support for publishing events from multiple projects is available in Preview.",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#September_24_2025"
+        },
+        {
+          "date": "2025-08-01",
+          "title": "Change\nThere is a limit of one MessageBus resource per project per region, and a limit of one GoogleApiSource resource p",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#August_01_2025"
+        },
+        {
+          "date": "2025-05-15",
+          "title": "Feature\nSupport for creating custom organization policy constraints in Eventarc Advanced and in Eventarc Standard is gen",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#May_15_2025"
+        },
+        {
+          "date": "2025-04-11",
+          "title": "Fixed\nFor applicable events, if a context attribute value size limit is exceeded, you are notified through a publishing ",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#April_11_2025"
+        },
+        {
+          "date": "2025-03-17",
+          "title": "Change\nEventarc Standard is available in the europe-north2 (Stockholm, Sweden) region.",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#March_17_2025"
+        },
+        {
+          "date": "2025-01-29",
+          "title": "Feature\nTo help ensure CMEK usage across an organization, Eventarc Advanced and Eventarc Standard are integrated with tw",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#January_29_2025"
+        },
+        {
+          "date": "2024-11-08",
+          "title": "Change\nEventarc Standard is available in the northamerica-south1 (Mexico, North America) region.",
+          "url": "https://docs.cloud.google.com/eventarc/docs/release-notes#November_08_2024"
+        }
+      ]
+    },
+    {
+      "id": "cloud-storage",
+      "enabled": true,
+      "name": "Cloud Storage",
+      "category": "Storage",
+      "description": "Cloud Storage is a managed service for storing unstructured data. It offers global edge-caching and multiple storage classes for any workload.",
+      "useCases": [
+        "Object storage",
+        "Data lakes",
+        "Backups",
+        "Static hosting"
+      ],
+      "pricing": "Pay per GB stored and operations",
+      "pricingUrl": "https://cloud.google.com/storage/pricing",
+      "url": "https://cloud.google.com/storage",
+      "icon": "🪣",
+      "limits": [
+        {
+          "name": "Max object size",
+          "value": "5 TiB"
+        },
+        {
+          "name": "Max buckets per project",
+          "value": "Varies (soft limit)"
+        },
+        {
+          "name": "Max object write rate per bucket",
+          "value": "1 write/second (same object)"
+        },
+        {
+          "name": "Max read rate per object",
+          "value": "No limit"
+        },
+        {
+          "name": "Max metadata size per object",
+          "value": "8 KiB"
+        },
+        {
+          "name": "Object name max length",
+          "value": "1,024 bytes"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-04-29",
+          "title": "Feature\nYou can manage object contexts in the Google Cloud Console.\nTo learn more, see Use object contexts.",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#April_29_2026"
+        },
+        {
+          "date": "2026-04-27",
+          "title": "Feature\nCloud Storage now offers support for AI zones. To learn more, see\nAI zones.",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#April_27_2026"
+        },
+        {
+          "date": "2026-04-20",
+          "title": "Feature\nCloud Storage Model Context Protocol (MCP) server is generally\navailable. You can\nconnect to Cloud Storage from ",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#April_20_2026"
+        },
+        {
+          "date": "2026-04-08",
+          "title": "Feature\nYou can delete up to 1,000 objects in a single request by using the\nCloud Storage multi-object delete XML API. I",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#April_08_2026"
+        },
+        {
+          "date": "2026-04-06",
+          "title": "Feature\nYou can now use Storage batch operations\nto update object contexts for multiple objects\nin a single job. You can",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#April_06_2026"
+        },
+        {
+          "date": "2026-04-02",
+          "title": "Feature\nYou can configure which encryption types are allowed or prohibited for\ncreating new objects in a bucket. For mor",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#April_02_2026"
+        },
+        {
+          "date": "2026-03-31",
+          "title": "Feature\nYou can now use Storage Insights datasets to help manage your data security and compliance. The ability to ident",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#March_31_2026"
+        },
+        {
+          "date": "2026-03-24",
+          "title": "Announcement\nAnywhere Cache has been renamed to Rapid Cache.",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#March_24_2026"
+        },
+        {
+          "date": "2026-03-12",
+          "title": "Change\nObject uploads that use customer-managed encryption keys (CMEK) now fail if the\nCloud Storage service agent lacks",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#March_12_2026"
+        },
+        {
+          "date": "2026-03-10",
+          "title": "Feature\nRapid Bucket is now generally available.\nRapid Bucket lets you store objects in the Rapid storage class by defin",
+          "url": "https://docs.cloud.google.com/storage/docs/release-notes#March_10_2026"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Standard storage",
+          "price": "$0.020",
+          "unit": "per GB/month",
+          "description": "$0.020 per GB per month"
+        },
+        {
+          "label": "Nearline storage",
+          "price": "$0.010",
+          "unit": "per GB/month",
+          "description": "$0.010 per GB per month"
+        },
+        {
+          "label": "Class A operations",
+          "price": "$0.005",
+          "unit": "per 1K ops",
+          "description": "$0.005 per 1,000 operations"
+        },
+        {
+          "label": "Class B operations",
+          "price": "$0.0004",
+          "unit": "per 1K ops",
+          "description": "$0.0004 per 1,000 operations"
+        }
+      ]
+    },
+    {
+      "id": "workflows",
+      "enabled": true,
+      "name": "Workflows",
+      "category": "Integration",
+      "description": "Workflows is a fully managed orchestration platform that executes services in an order that you define, combining Cloud Run, Cloud Functions, and APIs.",
+      "useCases": [
+        "Service orchestration",
+        "Batch processing",
+        "CI/CD pipelines",
+        "Data pipelines"
+      ],
+      "pricing": "Pay per step executed",
+      "pricingUrl": "https://cloud.google.com/workflows/pricing",
+      "url": "https://cloud.google.com/workflows",
+      "icon": "🔀",
+      "limits": [
+        {
+          "name": "Max execution duration",
+          "value": "1 year"
+        },
+        {
+          "name": "Max steps per execution",
+          "value": "Unlimited"
+        },
+        {
+          "name": "Max concurrent executions",
+          "value": "10,000"
+        },
+        {
+          "name": "Max workflow size",
+          "value": "128 KB (source)"
+        },
+        {
+          "name": "Max variable size",
+          "value": "512 KB"
+        },
+        {
+          "name": "Max call stack depth",
+          "value": "20"
+        }
+      ],
+      "news": [
+        {
+          "date": "2026-02-17",
+          "title": "v1\nChange\nWorkflows is available in the following additional region: asia-southeast3 (Bangkok, Thailand).",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#February_17_2026"
+        },
+        {
+          "date": "2025-03-28",
+          "title": "v1\nFeature\nSupport for a Kubernetes API connector is generally available (GA). The connector allows you to interact with",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#March_28_2025"
+        },
+        {
+          "date": "2025-02-28",
+          "title": "v1\nFeature\nSupport to create and manage tags is available.  You can use tags to group workflows and other resources for ",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#February_28_2025"
+        },
+        {
+          "date": "2025-02-19",
+          "title": "v1\nChange\nWorkflows is available in the following additional region: europe-north2 (Stockholm, Sweden).",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#February_19_2025"
+        },
+        {
+          "date": "2025-02-07",
+          "title": "v1\nChange\nSupport for retrieving the detailed history of a workflow execution  (expected iterations, in-scope variables)",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#February_07_2025"
+        },
+        {
+          "date": "2025-02-06",
+          "title": "v1\nFeature\nSupport for creating custom organization policy constraints is available.",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#February_06_2025"
+        },
+        {
+          "date": "2025-01-28",
+          "title": "v1\nBreaking\nWorkflows doesn't support HTTP requests to the IP-based endpoints of Google Kubernetes Engine cluster contro",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#January_28_2025"
+        },
+        {
+          "date": "2024-10-28",
+          "title": "v1\nFeature\nTwo standard library functions to support common hashing algorithms have been added: compute_checksum and com",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#October_28_2024"
+        },
+        {
+          "date": "2024-09-30",
+          "title": "v1\nFeature\nA math.floor function has been added to return the largest integer less than or equal to a given number.",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#September_30_2024"
+        },
+        {
+          "date": "2024-09-13",
+          "title": "v1\nChange\nThe maximum number of concurrent workflow executions has increased from 7,500 to 10,000.",
+          "url": "https://docs.cloud.google.com/workflows/docs/release-notes#September_13_2024"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "Internal steps",
+          "price": "$0.01",
+          "unit": "per 1K steps",
+          "description": "$0.01 per 1,000 internal steps"
+        },
+        {
+          "label": "External steps (HTTP)",
+          "price": "$0.025",
+          "unit": "per 1K steps",
+          "description": "$0.025 per 1,000 external steps"
+        }
+      ]
+    },
+    {
+      "id": "api-gateway",
+      "enabled": true,
+      "name": "API Gateway",
+      "category": "Networking",
+      "description": "API Gateway enables you to provide secure access to your backend services through a well-defined REST API that is consistent across all of your services.",
+      "useCases": [
+        "API management",
+        "Rate limiting",
+        "Authentication",
+        "Backend routing"
+      ],
+      "pricing": "Pay per million API calls",
+      "pricingUrl": "https://cloud.google.com/api-gateway/pricing",
+      "url": "https://cloud.google.com/api-gateway",
+      "icon": "🌐",
+      "limits": [
+        {
+          "name": "Max request size",
+          "value": "32 MB"
+        },
+        {
+          "name": "Max response size",
+          "value": "32 MB"
+        },
+        {
+          "name": "Max timeout",
+          "value": "900 seconds (15 min)"
+        },
+        {
+          "name": "Max APIs per project",
+          "value": "10"
+        },
+        {
+          "name": "Max gateways per API",
+          "value": "3"
+        }
+      ],
+      "pricingDetails": [
+        {
+          "label": "API calls",
+          "price": "$3.00",
+          "unit": "per 1M calls",
+          "description": "$3.00 per million API calls (first 2M free)"
+        }
+      ]
+    }
+  ]
+}
