@@ -19,8 +19,6 @@ Globals:
     Runtime: python3.12
     Timeout: 300
     MemorySize: 256
-    Architectures:
-      - arm64
 
 Resources:
   DataBucket:
@@ -45,6 +43,8 @@ Resources:
       Handler: handler.lambda_handler
       CodeUri: src/collector/
       Description: Collects AWS serverless data, quotas, pricing, news and limits
+      Architectures:
+        - arm64
       Environment:
         Variables:
           BUCKET_NAME: !Ref DataBucket
@@ -75,6 +75,8 @@ Resources:
       Handler: handler.lambda_handler
       CodeUri: src/gcp-collector/
       Description: Collects GCP serverless data, pricing, news and limits
+      Architectures:
+        - arm64
       Environment:
         Variables:
           BUCKET_NAME: !Ref DataBucket
@@ -97,6 +99,8 @@ Resources:
       Handler: handler.lambda_handler
       CodeUri: src/azure-collector/
       Description: Collects Azure serverless data, pricing and limits
+      Architectures:
+        - arm64
       Environment:
         Variables:
           BUCKET_NAME: !Ref DataBucket
@@ -119,6 +123,8 @@ Resources:
       Handler: handler.lambda_handler
       CodeUri: src/committer/
       Description: Commits updated JSON to git repo when S3 object is created
+      Architectures:
+        - x86_64
       Layers:
         - !Ref GitLayer
       Environment:
@@ -163,10 +169,10 @@ Resources:
       CompatibleRuntimes:
         - python3.12
       CompatibleArchitectures:
-        - arm64
+        - x86_64
     Metadata:
       BuildMethod: makefile
-      BuildArchitecture: arm64
+      BuildArchitecture: x86_64
 
 Outputs:
   DataBucketName:

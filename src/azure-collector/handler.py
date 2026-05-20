@@ -6,6 +6,7 @@ import boto3
 
 from services import SERVICES
 from parsers.pricing import fetch_pricing
+from parsers.news import fetch_news
 from parsers.statistics import build_statistics
 from parsers.changelog import build_changelog
 
@@ -37,6 +38,13 @@ def build_service(svc):
     if svc.get("runtimes"):
         entry["runtimes"] = svc["runtimes"]
 
+    # News from Azure Blog RSS
+    news = fetch_news(svc["id"])
+    if news:
+        entry["news"] = news
+    print(f"[{svc['id']}] Got {len(news)} news")
+
+    # Pricing from Azure Retail Prices API (public)
     pricing_items = fetch_pricing(svc["id"])
     if pricing_items:
         entry["pricingDetails"] = pricing_items

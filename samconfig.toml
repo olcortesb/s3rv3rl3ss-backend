@@ -12,4 +12,8 @@ parameter_overrides = [
 ]
 
 [default.build.parameters]
-use_container = true
+# use_container: true for arm64 (Mac M1/M2), false for x86_64 (Intel)
+# Change based on your machine:
+#   Mac M1/M2: use_container = true
+#   Intel Linux: use_container = false
+use_container = false
