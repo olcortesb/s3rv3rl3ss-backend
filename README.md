@@ -68,11 +68,12 @@ parameter_overrides = [
 ## Deploy
 
 ```bash
-# Build + deploy
+# Build + deploy (Mac M1/M2 — native arm64)
 ./scripts/build.sh deploy
 
-# Or build only
-./scripts/build.sh
+# Build + deploy (Intel Linux/x86_64)
+# The GitLayer needs container build for Amazon Linux compatible binaries
+sam build && sam build GitLayer --use-container && sam deploy --config-file samconfig.local.toml
 ```
 
 See [OPERATIONS.md](OPERATIONS.md) for manual commands, testing and troubleshooting.
