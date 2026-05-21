@@ -1,0 +1,417 @@
+"""
+Generates comparisons.json with verified field mappings.
+
+For each comparison category, it:
+1. Defines the semantic mapping (what to compare)
+2. Verifies field names exist in the real data
+3. For pricing: uses curated values when API labels don't match (Azure Retail API returns SKU names, not friendly labels)
+4. Outputs warnings for any broken mappings
+"""
+
+import json
+import sys
+from pathlib import Path
+
+# Paths
+FRONTEND_DATA = Path(__file__).parent.parent.parent / "s3rv3rl3ss" / "src" / "data"
+
+def load_data():
+    with open(FRONTEND_DATA / "services-aws.json") as f:
+        aws = json.load(f)
+    with open(FRONTEND_DATA / "services-gcp.json") as f:
+        gcp = json.load(f)
+    with open(FRONTEND_DATA / "services-azure.json") as f:
+        azure = json.load(f)
+    return {"aws": aws, "gcp": gcp, "azure": azure}
+
+
+def get_service(data, provider, service_id):
+    if not service_id:
+        return None
+    return next((s for s in data[provider]["services"] if s["id"] == service_id), None)
+
+
+def verify_limit(svc, field_name):
+    """Check if a limit field exists in the service data."""
+    if not svc or not field_name or not svc.get("limits"):
+        return None
+    return next((l for l in svc["limits"] if l["name"] == field_name), None)
+
+
+def verify_pricing(svc, field_name):
+    """Check if a pricing field exists in the service data."""
+    if not svc or not field_name or not svc.get("pricingDetails"):
+        return None
+    return next((p for p in svc["pricingDetails"] if p["label"] == field_name), None)
+
+
+# ============================================================
+# COMPARISON DEFINITIONS
+# Each category maps semantic concepts to real field names
+# ============================================================
+
+CATEGORIES = [
+    {
+        "id": "functions",
+        "name": "Functions",
+        "icon": "⚡",
+        "services": {"aws": "lambda", "gcp": "cloud-run-functions", "azure": "azure-functions"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+            "gcp": "https://cloud.google.com/functions/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale",
+        },
+        "limits": [
+            {"label": "Max timeout", "aws": "Function timeout", "gcp": "Max function timeout (2nd gen)", "azure": "Max execution time (Consumption)"},
+            {"label": "Max memory", "aws": "Function memory allocation", "gcp": "Max memory", "azure": "Max memory (Consumption)"},
+            {"label": "Max payload/request size", "aws": "Synchronous payload", "gcp": "Max request size (HTTP)", "azure": "HTTP request size"},
+            {"label": "Deployment size", "aws": "Deployment package (.zip file archive) size", "gcp": "Deployment size (compressed)", "azure": "Storage (Consumption)"},
+            {"label": "Ephemeral storage", "aws": "/tmp directory storage", "gcp": None, "azure": None},
+            {"label": "Max instances", "aws": None, "gcp": "Max instances", "azure": "Max instances (Consumption)"},
+            {"label": "Concurrent executions", "aws": "Concurrent executions", "gcp": "Max concurrent requests per instance", "azure": "Max concurrent HTTP requests"},
+        ],
+        "pricing": [
+            {"label": "Invocations", "aws": "Requests", "gcp": "Invocations", "azure": None, "azure_static": "$0.20 per 1M executions"},
+            {"label": "Compute", "aws": "Compute (x86)", "gcp": "Compute (GHz-second)", "azure": None, "azure_static": "$0.000016 per GB-second"},
+        ],
+    },
+    {
+        "id": "kubernetes",
+        "name": "Kubernetes",
+        "icon": "☸️",
+        "services": {"aws": "eks", "gcp": "gke", "azure": "aks"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/eks/latest/userguide/service-quotas.html",
+            "gcp": "https://cloud.google.com/kubernetes-engine/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/aks/quotas-skus-regions",
+        },
+        "limits": [
+            {"label": "Nodes per cluster", "aws": "Nodes per cluster", "gcp": "Nodes per cluster", "azure": "Nodes per cluster"},
+            {"label": "Pods per node", "aws": "Pods per node (max)", "gcp": "Pods per node", "azure": "Pods per node"},
+            {"label": "Services per cluster", "aws": "Services per cluster", "gcp": "Services per cluster", "azure": "Services per cluster"},
+            {"label": "Node pools per cluster", "aws": "Managed node groups per cluster", "gcp": "Node pools per cluster", "azure": "Max node pools per cluster"},
+            {"label": "Clusters", "aws": "Clusters", "gcp": "Clusters per zone", "azure": "Max clusters per subscription"},
+        ],
+        "pricing": [],
+    },
+    {
+        "id": "containers",
+        "name": "Containers",
+        "icon": "🐳",
+        "services": {"aws": "ecs", "gcp": "cloud-run", "azure": "container-apps"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-quotas.html",
+            "gcp": "https://cloud.google.com/run/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/container-apps/quotas",
+        },
+        "limits": [
+            {"label": "Max vCPU", "aws": "Max vCPU (Fargate)", "gcp": "Max vCPU per instance", "azure": "Max vCPU per container"},
+            {"label": "Max memory", "aws": "Max memory (Fargate)", "gcp": "Max memory per instance", "azure": "Max memory per container"},
+            {"label": "Max ephemeral storage", "aws": "Max ephemeral storage (Fargate)", "gcp": None, "azure": None},
+            {"label": "Container image size", "aws": "Container image size", "gcp": "Container image size", "azure": "Max container image size"},
+            {"label": "Max instances/replicas", "aws": "Max tasks per service", "gcp": "Max instances", "azure": "Max replicas"},
+            {"label": "Max request timeout", "aws": None, "gcp": "Max request timeout", "azure": "Request timeout"},
+            {"label": "Max services per cluster", "aws": "Max services per cluster", "gcp": None, "azure": "Max apps per environment"},
+        ],
+        "pricing": [
+            {"label": "vCPU", "aws": None, "gcp": "vCPU", "azure": None, "aws_static": "$0.04048 per vCPU/hour", "azure_static": "$0.000024 per vCPU-second"},
+            {"label": "Memory", "aws": None, "gcp": "Memory", "azure": None, "aws_static": "$0.004445 per GB/hour", "azure_static": "$0.000003 per GiB-second"},
+        ],
+    },
+    {
+        "id": "nosql",
+        "name": "NoSQL Database",
+        "icon": "🗄️",
+        "services": {"aws": "dynamodb", "gcp": "firestore", "azure": "cosmos-db"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html",
+            "gcp": "https://cloud.google.com/firestore/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/cosmos-db/concepts-limits",
+        },
+        "limits": [
+            {"label": "Max document/item size", "aws": None, "gcp": "Max document size", "azure": "Max document size", "aws_static": "400 KB"},
+            {"label": "Secondary indexes", "aws": "Global Secondary Indexes per table", "gcp": "Max indexes per database", "azure": None},
+            {"label": "Max tables/collections", "aws": "Maximum number of tables", "gcp": None, "azure": None},
+            {"label": "Max writes per second", "aws": None, "gcp": "Max writes per second per database", "azure": "Max throughput (serverless)"},
+        ],
+        "pricing": [
+            {"label": "Writes", "aws": "Write Requests (on-demand)", "gcp": "Document writes", "azure": None, "azure_static": "$0.25 per 1M RUs"},
+            {"label": "Reads", "aws": "Read Requests (on-demand)", "gcp": "Document reads", "azure": None, "azure_static": "$0.25 per 1M RUs"},
+            {"label": "Storage", "aws": "Storage (Standard)", "gcp": "Storage", "azure": None, "azure_static": "$0.25 per GB/month"},
+        ],
+    },
+    {
+        "id": "serverless-sql",
+        "name": "Serverless SQL",
+        "icon": "🗃️",
+        "services": {"aws": "aurora-serverless", "gcp": "cloud-spanner", "azure": "azure-sql-serverless"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.html",
+            "gcp": "https://cloud.google.com/spanner/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview",
+        },
+        "limits": [
+            {"label": "Max storage", "aws": "Max storage", "gcp": "Max storage per node", "azure": "Max storage"},
+            {"label": "Max compute", "aws": "Max ACU", "gcp": None, "azure": "Max vCores"},
+            {"label": "Min compute", "aws": "Min ACU", "gcp": None, "azure": "Min vCores"},
+        ],
+        "pricing": [
+            {"label": "Compute", "aws": None, "gcp": "Processing units", "azure": None, "azure_static": "$0.000145 per vCore-second"},
+            {"label": "Storage", "aws": None, "gcp": "Storage", "azure": None, "azure_static": "$0.115 per GB/month"},
+        ],
+    },
+    {
+        "id": "object-storage",
+        "name": "Object Storage",
+        "icon": "📦",
+        "services": {"aws": "s3", "gcp": "cloud-storage", "azure": "blob-storage"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html",
+            "gcp": "https://cloud.google.com/storage/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-blob-storage-limits",
+        },
+        "limits": [
+            {"label": "Max object size", "aws": "Object size", "gcp": "Max object size", "azure": "Max blob size (block blob)"},
+        ],
+        "pricing": [
+            {"label": "Storage (standard)", "aws": None, "gcp": "Standard storage", "azure": None, "aws_static": "$0.023 per GB/month", "azure_static": "$0.018 per GB/month"},
+            {"label": "Write operations", "aws": None, "gcp": "Class A operations", "azure": None, "aws_static": "$0.005 per 1K PUT", "azure_static": "$0.055 per 10K ops"},
+            {"label": "Read operations", "aws": None, "gcp": "Class B operations", "azure": None, "aws_static": "$0.0004 per 1K GET", "azure_static": "$0.0044 per 10K ops"},
+        ],
+    },
+    {
+        "id": "messaging",
+        "name": "Messaging",
+        "icon": "📨",
+        "services": {"aws": "sqs", "gcp": "cloud-pubsub", "azure": "service-bus"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-quotas.html",
+            "gcp": "https://cloud.google.com/pubsub/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-quotas",
+        },
+        "limits": [
+            {"label": "Max message size", "aws": "Message Size", "gcp": "Max message size", "azure": "Max message size (Standard)"},
+            {"label": "Message retention", "aws": "Message retention", "gcp": "Message retention", "azure": "Message retention"},
+            {"label": "Batch size", "aws": "Batch size", "gcp": None, "azure": None},
+            {"label": "In-flight messages", "aws": "In-flight (standard)", "gcp": None, "azure": "Max concurrent connections"},
+            {"label": "Max subscriptions per topic", "aws": None, "gcp": "Max subscriptions per topic", "azure": "Max subscriptions per topic"},
+        ],
+        "pricing": [
+            {"label": "Operations", "aws": "Standard Queue", "gcp": "Message delivery", "azure": None, "azure_static": "$0.05 per 1M operations"},
+        ],
+    },
+    {
+        "id": "events",
+        "name": "Events",
+        "icon": "📡",
+        "services": {"aws": "eventbridge", "gcp": "eventarc", "azure": "event-grid"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-quota.html",
+            "gcp": "https://cloud.google.com/eventarc/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/event-grid/quotas-limits",
+        },
+        "limits": [
+            {"label": "Max event size", "aws": "Event size", "gcp": "Max event size", "azure": "Max event size"},
+            {"label": "Max rules/triggers", "aws": "Rules per event bus", "gcp": "Max triggers per project per region", "azure": "Max event subscriptions per topic"},
+            {"label": "Targets per rule", "aws": "Targets per rule", "gcp": None, "azure": None},
+            {"label": "Event retention", "aws": None, "gcp": None, "azure": "Event retention"},
+        ],
+        "pricing": [
+            {"label": "Events/operations", "aws": "Custom Events", "gcp": None, "azure": None, "azure_static": "$0.60 per 1M operations"},
+        ],
+    },
+    {
+        "id": "api-gateway",
+        "name": "API Gateway",
+        "icon": "🔗",
+        "services": {"aws": "api-gateway", "gcp": "api-gateway", "azure": "api-management"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/apigateway/latest/developerguide/limits.html",
+            "gcp": "https://cloud.google.com/api-gateway/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/api-management/api-management-capacity",
+        },
+        "limits": [
+            {"label": "Max payload size", "aws": "API Payload Size", "gcp": "Max request size", "azure": "Max request size"},
+            {"label": "Max timeout", "aws": "Maximum integration timeout in milliseconds", "gcp": "Max timeout", "azure": "Max request timeout"},
+            {"label": "Throttle rate", "aws": "Throttle rate", "gcp": None, "azure": None},
+            {"label": "Max APIs", "aws": "Regional APIs", "gcp": "Max APIs per project", "azure": "Max APIs"},
+        ],
+        "pricing": [
+            {"label": "API calls", "aws": "REST API Requests", "gcp": "API calls", "azure": None, "azure_static": "$3.50 per 1M calls (Consumption)"},
+        ],
+    },
+    {
+        "id": "orchestration",
+        "name": "Orchestration",
+        "icon": "🔀",
+        "services": {"aws": "step-functions", "gcp": "workflows", "azure": "logic-apps"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/step-functions/latest/dg/limits-overview.html",
+            "gcp": "https://cloud.google.com/workflows/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-limits-and-config",
+        },
+        "limits": [
+            {"label": "Max execution duration", "aws": "Max execution time (Standard)", "gcp": "Max execution duration", "azure": "Max workflow run duration"},
+            {"label": "Max payload size", "aws": "Max input/output size", "gcp": "Max variable size", "azure": "Max message size"},
+            {"label": "Max concurrent executions", "aws": None, "gcp": "Max concurrent executions", "azure": "Max concurrent runs"},
+            {"label": "Max history events", "aws": "Max execution history events", "gcp": None, "azure": None},
+        ],
+        "pricing": [
+            {"label": "Per step/transition", "aws": "Standard Workflows", "gcp": "Internal steps", "azure": None, "azure_static": "$0.000125 per action"},
+        ],
+    },
+    {
+        "id": "streaming",
+        "name": "Streaming",
+        "icon": "🌊",
+        "services": {"aws": "kinesis", "gcp": None, "azure": "event-hubs"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html",
+            "gcp": None,
+            "azure": "https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas",
+        },
+        "limits": [
+            {"label": "Max record/event size", "aws": "Record size", "gcp": None, "azure": "Max event size"},
+            {"label": "Max retention", "aws": "Data retention", "gcp": None, "azure": "Max retention (Standard)"},
+            {"label": "Write throughput", "aws": "Write throughput per shard", "gcp": None, "azure": None},
+            {"label": "Read throughput", "aws": "Read throughput per shard", "gcp": None, "azure": None},
+        ],
+        "pricing": [
+            {"label": "Write/ingress", "aws": "On-Demand Write", "gcp": None, "azure": None, "azure_static": "$0.015 per TU/hour"},
+            {"label": "Events", "aws": None, "gcp": None, "azure": None, "azure_static": "$0.028 per 1M events"},
+        ],
+    },
+    {
+        "id": "secrets",
+        "name": "Secrets Management",
+        "icon": "🔑",
+        "services": {"aws": "secrets-manager", "gcp": "secret-manager", "azure": "key-vault"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_limits.html",
+            "gcp": "https://cloud.google.com/secret-manager/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/key-vault/general/service-limits",
+        },
+        "limits": [
+            {"label": "Max secret size", "aws": "Secret value size", "gcp": "Max secret size", "azure": "Max secret size"},
+            {"label": "Max secrets per account", "aws": "Secrets per account", "gcp": "Max secrets per project", "azure": None},
+            {"label": "Max versions per secret", "aws": "Versions per secret", "gcp": "Max versions per secret", "azure": None},
+        ],
+        "pricing": [
+            {"label": "Storage/operations", "aws": None, "gcp": "Active secret versions", "azure": None, "aws_static": "$0.40 per secret/month", "azure_static": "$0.03 per 10K operations"},
+            {"label": "Access operations", "aws": None, "gcp": "Access operations", "azure": None, "aws_static": "$0.05 per 10K API calls", "azure_static": "$0.03 per 10K operations"},
+        ],
+    },
+    {
+        "id": "ai-ml",
+        "name": "AI / ML",
+        "icon": "🧠",
+        "services": {"aws": "bedrock", "gcp": "vertex-ai", "azure": "azure-ai-services"},
+        "limitsUrls": {
+            "aws": "https://docs.aws.amazon.com/bedrock/latest/userguide/quotas.html",
+            "gcp": "https://cloud.google.com/vertex-ai/docs/quotas",
+            "azure": "https://learn.microsoft.com/en-us/azure/ai-services/openai/quotas-limits",
+        },
+        "limits": [
+            {"label": "Max input tokens", "aws": "Max input tokens", "gcp": None, "azure": "Max tokens per request"},
+            {"label": "Max endpoints/models", "aws": "Knowledge bases per account", "gcp": "Max endpoints per project", "azure": "Max custom models per resource"},
+        ],
+        "pricing": [
+            {"label": "Input tokens", "aws": None, "gcp": "Gemini 1.5 Flash input", "azure": None, "aws_static": "$0.003 per 1K input tokens (Claude Haiku)", "azure_static": "$2.50 per 1M tokens (GPT-4o)"},
+            {"label": "Output tokens", "aws": None, "gcp": "Gemini 1.5 Flash output", "azure": None, "aws_static": "$0.015 per 1K output tokens (Claude Haiku)", "azure_static": "$10.00 per 1M tokens (GPT-4o)"},
+        ],
+    },
+]
+
+
+def build_comparisons(data):
+    """Build comparisons.json verifying all field mappings against real data."""
+    output_categories = []
+    warnings = []
+
+    for cat in CATEGORIES:
+        # Verify limits
+        verified_limits = []
+        for row in cat.get("limits", []):
+            verified_row = {"label": row["label"]}
+            for provider in ["aws", "gcp", "azure"]:
+                field = row.get(provider)
+                static_key = f"{provider}_static"
+                if field:
+                    svc = get_service(data, provider, cat["services"].get(provider))
+                    match = verify_limit(svc, field)
+                    if match:
+                        verified_row[provider] = field
+                    else:
+                        warnings.append(f"[{cat['id']}] {provider} limit '{field}' NOT FOUND")
+                        verified_row[provider] = None
+                elif row.get(static_key):
+                    verified_row[provider] = None
+                    verified_row[f"{provider}_value"] = row[static_key]
+                else:
+                    verified_row[provider] = None
+            if row.get("unit"):
+                verified_row["unit"] = row["unit"]
+            verified_limits.append(verified_row)
+
+        # Verify pricing
+        verified_pricing = []
+        for row in cat.get("pricing", []):
+            verified_row = {"label": row["label"]}
+            for provider in ["aws", "gcp", "azure"]:
+                field = row.get(provider)
+                static_key = f"{provider}_static"
+                if field:
+                    svc = get_service(data, provider, cat["services"].get(provider))
+                    match = verify_pricing(svc, field)
+                    if match:
+                        verified_row[provider] = field
+                    else:
+                        warnings.append(f"[{cat['id']}] {provider} pricing '{field}' NOT FOUND")
+                        # Use static fallback if available
+                        if row.get(static_key):
+                            verified_row[provider] = field  # keep the field, frontend will show static
+                        else:
+                            verified_row[provider] = None
+                elif row.get(static_key):
+                    # No API field, use static value directly
+                    verified_row[f"{provider}_value"] = row[static_key]
+                    verified_row[provider] = None
+                else:
+                    verified_row[provider] = None
+            verified_pricing.append(verified_row)
+
+        output_cat = {
+            "id": cat["id"],
+            "name": cat["name"],
+            "icon": cat["icon"],
+            "services": cat["services"],
+            "limitsUrls": cat.get("limitsUrls", {}),
+            "limits": verified_limits,
+            "pricing": verified_pricing,
+        }
+        output_categories.append(output_cat)
+
+    return {"categories": output_categories}, warnings
+
+
+if __name__ == "__main__":
+    data = load_data()
+    result, warnings = build_comparisons(data)
+
+    if warnings:
+        print(f"\n⚠️  {len(warnings)} warnings:", file=sys.stderr)
+        for w in warnings:
+            print(f"  {w}", file=sys.stderr)
+
+    # Write output
+    output_path = FRONTEND_DATA / "comparisons.json"
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    print(f"\n✅ Generated {output_path} with {len(result['categories'])} categories")
+
+    # Summary
+    total_limits = sum(len(c["limits"]) for c in result["categories"])
+    total_pricing = sum(len(c["pricing"]) for c in result["categories"])
+    print(f"   {total_limits} limit comparisons, {total_pricing} pricing comparisons")
+    print(f"   {len(warnings)} broken mappings")

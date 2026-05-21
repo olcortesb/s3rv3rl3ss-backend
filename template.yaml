@@ -160,6 +160,31 @@ Resources:
                     - prefix: data/
                     - suffix: .json
 
+  ComparisonsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/comparisons/
+      Description: Generates comparisons.json from all provider data
+      Architectures:
+        - arm64
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/comparisons.json
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(45 6 * * ? *)
+            Description: Generates comparisons after all collectors finish
+            Enabled: true
+
   GitLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -185,3 +210,5 @@ Outputs:
     Value: !GetAtt AzureCollectorFunction.Arn
   CommitterFunctionArn:
     Value: !GetAtt CommitterFunction.Arn
+  ComparisonsFunctionArn:
+    Value: !GetAtt ComparisonsFunction.Arn
