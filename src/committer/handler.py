@@ -1,126 +1,146 @@
+"""
+Committer using GitHub Contents API.
+No git binary needed — uses REST API to create/update files directly.
+Each invocation commits a single file that triggered the event.
+"""
+
+import base64
 import json
 import os
-import subprocess
-import tempfile
 
 import boto3
+from urllib.request import urlopen, Request
+from urllib.error import HTTPError
 
-s3 = boto3.client('s3')
-sm = boto3.client('secretsmanager')
+s3 = boto3.client("s3")
+sm = boto3.client("secretsmanager")
 
-BUCKET = os.environ['BUCKET_NAME']
-S3_KEY = os.environ['S3_KEY']
-CHANGELOG_KEY = os.environ.get('CHANGELOG_KEY', 'data/changelog.json')
-STATISTICS_KEY = os.environ.get('STATISTICS_KEY', 'data/statistics.json')
-GIT_REPO_URL = os.environ['GIT_REPO_URL']
-GIT_SECRET_ARN = os.environ['GIT_SECRET_ARN']
-DEST_PATH = os.environ['DEST_PATH']
-CHANGELOG_DEST = os.environ.get('CHANGELOG_DEST', 'src/data/changelog.json')
-STATISTICS_DEST = os.environ.get('STATISTICS_DEST', 'src/data/statistics.json')
-GCP_S3_KEY = os.environ.get('GCP_S3_KEY', 'data/services-gcp.json')
-GCP_DEST = os.environ.get('GCP_DEST', 'src/data/services-gcp.json')
-GCP_STATS_KEY = os.environ.get('GCP_STATS_KEY', 'data/statistics-gcp.json')
-GCP_STATS_DEST = os.environ.get('GCP_STATS_DEST', 'src/data/statistics-gcp.json')
-AZURE_S3_KEY = os.environ.get('AZURE_S3_KEY', 'data/services-azure.json')
-AZURE_DEST = os.environ.get('AZURE_DEST', 'src/data/services-azure.json')
-AZURE_STATS_KEY = os.environ.get('AZURE_STATS_KEY', 'data/statistics-azure.json')
-AZURE_STATS_DEST = os.environ.get('AZURE_STATS_DEST', 'src/data/statistics-azure.json')
-GCP_CHANGELOG_KEY = os.environ.get('GCP_CHANGELOG_KEY', 'data/changelog-gcp.json')
-GCP_CHANGELOG_DEST = os.environ.get('GCP_CHANGELOG_DEST', 'src/data/changelog-gcp.json')
-AZURE_CHANGELOG_KEY = os.environ.get('AZURE_CHANGELOG_KEY', 'data/changelog-azure.json')
-AZURE_CHANGELOG_DEST = os.environ.get('AZURE_CHANGELOG_DEST', 'src/data/changelog-azure.json')
+BUCKET = os.environ["BUCKET_NAME"]
+GIT_SECRET_ARN = os.environ["GIT_SECRET_ARN"]
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "olcortesb/s3rv3rl3ss")
+GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main")
+
+# Mapping: S3 key prefix → frontend repo path prefix
+S3_TO_REPO_MAP = "data/"
+REPO_PREFIX = "src/data/"
 
 
-def get_git_token():
+def get_token():
     resp = sm.get_secret_value(SecretId=GIT_SECRET_ARN)
-    secret = json.loads(resp['SecretString'])
-    return secret['token']
+    secret = json.loads(resp["SecretString"])
+    return secret["token"]
 
 
-def run(cmd, cwd=None):
-    env = os.environ.copy()
-    env['PATH'] = '/opt/bin:' + env.get('PATH', '')
-    env['LD_LIBRARY_PATH'] = '/opt/lib:' + env.get('LD_LIBRARY_PATH', '')
-    env['GIT_TEMPLATE_DIR'] = '/opt/share/git-core/templates'
-    env['GIT_EXEC_PATH'] = '/opt/bin'
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=120, env=env)
-    if result.returncode != 0:
-        raise RuntimeError(f"Command failed: {' '.join(cmd)}\n{result.stderr}")
-    return result.stdout.strip()
+def github_api(method, path, token, data=None):
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/{path}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "s3rv3rl3ss-bot",
+    }
+    body = json.dumps(data).encode("utf-8") if data else None
+    req = Request(url, data=body, headers=headers, method=method)
+    try:
+        resp = urlopen(req, timeout=30)
+        return json.loads(resp.read().decode("utf-8"))
+    except HTTPError as e:
+        error_body = e.read().decode("utf-8") if e.fp else ""
+        raise RuntimeError(f"GitHub API {method} {path}: {e.code} {error_body}")
+
+
+def get_file_sha(token, repo_path):
+    """Get current SHA of a file (needed for updates)."""
+    try:
+        result = github_api("GET", f"contents/{repo_path}?ref={GITHUB_BRANCH}", token)
+        return result.get("sha")
+    except RuntimeError as e:
+        if "404" in str(e):
+            return None  # File doesn't exist yet
+        raise
+
+
+def commit_file(token, repo_path, content, message):
+    """Create or update a file via GitHub Contents API."""
+    sha = get_file_sha(token, repo_path)
+    encoded = base64.b64encode(content.encode("utf-8")).decode("utf-8")
+
+    payload = {
+        "message": message,
+        "content": encoded,
+        "branch": GITHUB_BRANCH,
+        "committer": {
+            "name": "s3rv3rl3ss-bot",
+            "email": "s3rv3rl3ss-bot@automated.dev",
+        },
+    }
+    if sha:
+        payload["sha"] = sha
+
+    github_api("PUT", f"contents/{repo_path}", token, payload)
 
 
 def lambda_handler(event, context):
-    token = get_git_token()
+    # Extract S3 key from EventBridge event
+    s3_key = None
+    if "detail" in event:
+        s3_key = event["detail"].get("object", {}).get("key")
 
-    # Build authenticated URL
-    # Supports https://github.com/user/repo.git format
-    auth_url = GIT_REPO_URL.replace('https://', f'https://x-access-token:{token}@')
+    if not s3_key:
+        # Fallback: commit all known files
+        s3_key = None
 
-    # Download JSON from S3
-    resp = s3.get_object(Bucket=BUCKET, Key=S3_KEY)
-    content = resp['Body'].read().decode('utf-8')
+    token = get_token()
 
-    # Download changelog from S3
-    changelog_content = None
-    try:
-        resp2 = s3.get_object(Bucket=BUCKET, Key=CHANGELOG_KEY)
-        changelog_content = resp2['Body'].read().decode('utf-8')
-    except Exception:
-        pass
+    if s3_key and s3_key.startswith(S3_TO_REPO_MAP):
+        # Single file mode: commit just the file that triggered the event
+        filename = s3_key[len(S3_TO_REPO_MAP):]
+        repo_path = f"{REPO_PREFIX}{filename}"
 
-    git_bin = '/opt/bin/git'
-
-    with tempfile.TemporaryDirectory() as tmp:
-        run([git_bin, 'clone', '--depth', '1', auth_url, tmp])
-        run([git_bin, 'config', 'user.email', 's3rv3rl3ss-bot@automated.dev'], cwd=tmp)
-        run([git_bin, 'config', 'user.name', 's3rv3rl3ss-bot'], cwd=tmp)
-
-        dest = os.path.join(tmp, DEST_PATH)
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-
-        with open(dest, 'w', encoding='utf-8') as f:
-            f.write(content)
-
-        # Write changelog if available
-        if changelog_content:
-            changelog_dest = os.path.join(tmp, CHANGELOG_DEST)
-            os.makedirs(os.path.dirname(changelog_dest), exist_ok=True)
-            with open(changelog_dest, 'w', encoding='utf-8') as f:
-                f.write(changelog_content)
-
-        # Write statistics if available
-        stats_content = None
         try:
-            resp3 = s3.get_object(Bucket=BUCKET, Key=STATISTICS_KEY)
-            stats_content = resp3['Body'].read().decode('utf-8')
-        except Exception:
-            pass
+            resp = s3.get_object(Bucket=BUCKET, Key=s3_key)
+            content = resp["Body"].read().decode("utf-8")
+        except Exception as e:
+            return {"statusCode": 500, "body": f"Error reading {s3_key}: {e}"}
 
-        if stats_content:
-            stats_dest = os.path.join(tmp, STATISTICS_DEST)
-            os.makedirs(os.path.dirname(stats_dest), exist_ok=True)
-            with open(stats_dest, 'w', encoding='utf-8') as f:
-                f.write(stats_content)
+        # Check if content actually changed
+        sha_before = get_file_sha(token, repo_path)
+        if sha_before:
+            # Compare content
+            existing = github_api("GET", f"contents/{repo_path}?ref={GITHUB_BRANCH}", token)
+            existing_content = base64.b64decode(existing["content"]).decode("utf-8")
+            if existing_content == content:
+                return {"statusCode": 200, "body": f"No changes for {filename}"}
 
-        # Write GCP files if available
-        for s3_key, dest_path in [(GCP_S3_KEY, GCP_DEST), (GCP_STATS_KEY, GCP_STATS_DEST), (AZURE_S3_KEY, AZURE_DEST), (AZURE_STATS_KEY, AZURE_STATS_DEST), (GCP_CHANGELOG_KEY, GCP_CHANGELOG_DEST), (AZURE_CHANGELOG_KEY, AZURE_CHANGELOG_DEST)]:
-            try:
-                resp = s3.get_object(Bucket=BUCKET, Key=s3_key)
-                gcp_content = resp['Body'].read().decode('utf-8')
-                dest_file = os.path.join(tmp, dest_path)
-                os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-                with open(dest_file, 'w', encoding='utf-8') as f:
-                    f.write(gcp_content)
-            except Exception:
-                pass
+        commit_file(token, repo_path, content, f"chore: update {filename} [automated]")
+        return {"statusCode": 200, "body": f"Committed {filename}"}
 
-        # Check if there are changes
-        diff = run([git_bin, 'diff', '--name-only'], cwd=tmp)
-        if not diff:
-            return {"statusCode": 200, "body": "No changes to commit"}
+    else:
+        # Batch mode: commit all data/ files from S3
+        files_committed = []
+        paginator = s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=BUCKET, Prefix=S3_TO_REPO_MAP):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                if not key.endswith(".json"):
+                    continue
+                filename = key[len(S3_TO_REPO_MAP):]
+                repo_path = f"{REPO_PREFIX}{filename}"
 
-        run([git_bin, 'add', DEST_PATH, CHANGELOG_DEST, STATISTICS_DEST, GCP_DEST, GCP_STATS_DEST, AZURE_DEST, AZURE_STATS_DEST, GCP_CHANGELOG_DEST, AZURE_CHANGELOG_DEST], cwd=tmp)
-        run([git_bin, 'commit', '-m', 'chore: update services and changelog [automated]'], cwd=tmp)
-        run([git_bin, 'push'], cwd=tmp)
+                try:
+                    resp = s3.get_object(Bucket=BUCKET, Key=key)
+                    content = resp["Body"].read().decode("utf-8")
 
-    return {"statusCode": 200, "body": "Committed and pushed changes"}
+                    # Check if changed
+                    existing_sha = get_file_sha(token, repo_path)
+                    if existing_sha:
+                        existing = github_api("GET", f"contents/{repo_path}?ref={GITHUB_BRANCH}", token)
+                        existing_content = base64.b64decode(existing["content"]).decode("utf-8")
+                        if existing_content == content:
+                            continue
+
+                    commit_file(token, repo_path, content, f"chore: update {filename} [automated]")
+                    files_committed.append(filename)
+                except Exception as e:
+                    print(f"[committer] Error with {key}: {e}")
+
+        return {"statusCode": 200, "body": f"Committed {len(files_committed)} files: {files_committed}"}

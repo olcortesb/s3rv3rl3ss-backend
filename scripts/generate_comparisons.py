@@ -207,7 +207,7 @@ CATEGORIES = [
         "services": {"aws": "eventbridge", "gcp": "eventarc", "azure": "event-grid"},
         "limitsUrls": {
             "aws": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-quota.html",
-            "gcp": "https://cloud.google.com/eventarc/quotas",
+            "gcp": "https://cloud.google.com/eventarc/docs/quotas",
             "azure": "https://learn.microsoft.com/en-us/azure/event-grid/quotas-limits",
         },
         "limits": [
@@ -227,7 +227,7 @@ CATEGORIES = [
         "services": {"aws": "api-gateway", "gcp": "api-gateway", "azure": "api-management"},
         "limitsUrls": {
             "aws": "https://docs.aws.amazon.com/apigateway/latest/developerguide/limits.html",
-            "gcp": "https://cloud.google.com/api-gateway/quotas",
+            "gcp": "https://cloud.google.com/api-gateway/docs/quotas",
             "azure": "https://learn.microsoft.com/en-us/azure/api-management/api-management-capacity",
         },
         "limits": [

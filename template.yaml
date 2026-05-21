@@ -122,18 +122,15 @@ Resources:
     Properties:
       Handler: handler.lambda_handler
       CodeUri: src/committer/
-      Description: Commits updated JSON to git repo when S3 object is created
+      Description: Commits updated JSON to GitHub repo via API when S3 object is created
       Architectures:
-        - x86_64
-      Layers:
-        - !Ref GitLayer
+        - arm64
       Environment:
         Variables:
           BUCKET_NAME: !Ref DataBucket
-          S3_KEY: data/services-aws.json
-          GIT_REPO_URL: !Ref GitRepoUrl
           GIT_SECRET_ARN: !Ref GitSecretArn
-          DEST_PATH: src/data/services-aws.json
+          GITHUB_REPO: !Select [0, !Split [".git", !Select [1, !Split ["github.com/", !Ref GitRepoUrl]]]]
+          GITHUB_BRANCH: main
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DataBucket
@@ -185,19 +182,6 @@ Resources:
             Description: Generates comparisons after all collectors finish
             Enabled: true
 
-  GitLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: git-binary
-      Description: Git binary for Lambda
-      ContentUri: layers/git/
-      CompatibleRuntimes:
-        - python3.12
-      CompatibleArchitectures:
-        - x86_64
-    Metadata:
-      BuildMethod: makefile
-      BuildArchitecture: x86_64
 
 Outputs:
   DataBucketName:
