@@ -4,14 +4,16 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 
 ## How it works
 
-![Architecture](image-1.png)
+![Architecture](image.png)
 
-1. **EventBridge Schedules** trigger 4 Lambda functions daily (staggered):
+1. **EventBridge Schedules** trigger 7 Lambda functions daily (staggered):
    - `06:00` → AWS Collector (22 services)
    - `06:15` → GCP Collector (18 services)
    - `06:30` → Azure Collector (17 services)
    - `06:45` → Comparisons Generator (cross-provider)
-2. Each **Collector** queries real APIs + static data → writes JSON to S3
+   - `06:50` → Changelog Generator (from DynamoDB)
+   - `06:55` → Metrics Generator (CloudWatch + DynamoDB)
+2. Each **Collector** queries real APIs + static data → writes JSON to S3 + persists to DynamoDB
 3. **S3 ObjectCreated** event → **EventBridge** → triggers **CommitterFunction**
 4. **CommitterFunction** uses the GitHub Contents API to commit the file directly (1 commit per file)
 5. **AWS Amplify** detects the push and auto-deploys the frontend
@@ -42,6 +44,27 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 - Reads all 3 provider JSONs from S3
 - Generates `comparisons.json` with verified field mappings
 - 13 categories (Functions, Containers, Kubernetes, NoSQL, etc.)
+
+### Changelog Generator
+- Reads `CHANGE` items from DynamoDB (persisted by collectors)
+- Generates `changelog-{provider}.json` with URLs for news items
+- 90-day rolling window
+
+### Metrics Generator
+- Queries CloudWatch for Lambda invocations, duration, errors
+- Queries DynamoDB for item count
+- Calculates estimated costs
+- Generates `metrics.json` for the frontend `/metrics` page
+
+## Persistence (DynamoDB)
+
+Single table design with entities: `SERVICE`, `LIMIT`, `NEWS`, `RUNTIME`, `PRICING`, `CHANGE`.
+
+- **PK**: `{provider}#{service_id}` — e.g. `aws#lambda`
+- **SK**: `{entity}#{key}` — e.g. `LIMIT#Function timeout`, `CHANGE#2026-05-21#a3f2`
+- **GSI1**: `{entity}#{provider}` / `{date}#{service}` — for queries by type and date
+
+Collectors write current state + detected changes on every run. Changelog is generated from `CHANGE` items.
 
 ## Adding a service
 
@@ -101,5 +124,26 @@ sam build && sam deploy --config-file samconfig.local.toml
 # Or use the script
 ./scripts/build.sh deploy
 ```
+
+## Initial data load
+
+After first deploy, load existing data into DynamoDB:
+
+```bash
+python3 scripts/load_dynamo.py --region us-east-1
+```
+
+## Cost
+
+~$0.40/month total (only Secrets Manager outside free tier).
+
+| Service | Cost |
+|---------|------|
+| Lambda (7 functions, arm64) | $0.00 (free tier) |
+| DynamoDB (on-demand) | $0.00 (free tier) |
+| S3 (versioned) | $0.00 (free tier) |
+| EventBridge | $0.00 (free tier) |
+| Secrets Manager | $0.40/month |
+| Amplify (hosting) | $0.00 (free tier) |
 
 See [OPERATIONS.md](OPERATIONS.md) for manual commands, testing and troubleshooting.

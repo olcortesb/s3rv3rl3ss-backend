@@ -9,6 +9,7 @@ from parsers.pricing import fetch_pricing
 from parsers.news import fetch_news
 from parsers.statistics import build_statistics
 from parsers.changelog import build_changelog
+from parsers.dynamo import write_changes, update_service_data
 
 s3 = boto3.client('s3')
 
@@ -77,6 +78,14 @@ def lambda_handler(event, context):
     changelog = build_changelog(old_services, services, existing_changelog)
     new_changes = len(changelog) - len(existing_changelog)
     print(f"[azure-changelog] {new_changes} new changes detected")
+
+    # Persist to DynamoDB
+    if new_changes > 0:
+        new_entries = changelog[:new_changes]
+        dynamo_written = write_changes("azure", new_entries)
+        print(f"[dynamo] {dynamo_written} changes written")
+    update_service_data("azure", services)
+    print(f"[dynamo] service data updated")
 
     output = {
         "lastUpdated": date.today().isoformat(),

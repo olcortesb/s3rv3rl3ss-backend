@@ -49,9 +49,12 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref DataBucket
           S3_KEY: data/services-aws.json
+          TABLE_NAME: !Ref DataTable
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DataTable
         - Statement:
             - Effect: Allow
               Action:
@@ -82,9 +85,12 @@ Resources:
           BUCKET_NAME: !Ref DataBucket
           S3_KEY: data/services-gcp.json
           STATISTICS_KEY: data/statistics-gcp.json
+          TABLE_NAME: !Ref DataTable
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DataTable
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -106,9 +112,12 @@ Resources:
           BUCKET_NAME: !Ref DataBucket
           S3_KEY: data/services-azure.json
           STATISTICS_KEY: data/statistics-azure.json
+          TABLE_NAME: !Ref DataTable
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DataTable
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -182,6 +191,99 @@ Resources:
             Description: Generates comparisons after all collectors finish
             Enabled: true
 
+  ChangelogFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/changelog/
+      Description: Generates changelog JSONs from DynamoDB for all providers
+      Architectures:
+        - arm64
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          TABLE_NAME: !Ref DataTable
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - DynamoDBReadPolicy:
+            TableName: !Ref DataTable
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(50 6 * * ? *)
+            Description: Generates changelogs after all collectors finish
+            Enabled: true
+
+  MetricsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/metrics/
+      Description: Generates project infrastructure metrics from CloudWatch
+      Architectures:
+        - arm64
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          TABLE_NAME: !Ref DataTable
+          S3_KEY: data/metrics.json
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - DynamoDBReadPolicy:
+            TableName: !Ref DataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudwatch:GetMetricStatistics
+                - lambda:ListFunctions
+              Resource: '*'
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(55 6 * * ? *)
+            Description: Generates project metrics daily
+            Enabled: true
+
+  DataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub s3rv3rl3ss-${AWS::AccountId}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: gsi1pk
+          AttributeType: S
+        - AttributeName: gsi1sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: gsi1
+          KeySchema:
+            - AttributeName: gsi1pk
+              KeyType: HASH
+            - AttributeName: gsi1sk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
 
 Outputs:
   DataBucketName:
@@ -196,3 +298,9 @@ Outputs:
     Value: !GetAtt CommitterFunction.Arn
   ComparisonsFunctionArn:
     Value: !GetAtt ComparisonsFunction.Arn
+  ChangelogFunctionArn:
+    Value: !GetAtt ChangelogFunction.Arn
+  MetricsFunctionArn:
+    Value: !GetAtt MetricsFunction.Arn
+  DataTableName:
+    Value: !Ref DataTable

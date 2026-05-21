@@ -13,6 +13,7 @@ from parsers.changelog import build_changelog
 from parsers.integrations import fetch_integrations
 from parsers.pricing import fetch_pricing
 from parsers.statistics import build_statistics
+from parsers.dynamo import write_changes, update_service_data
 
 s3 = boto3.client('s3')
 
@@ -121,6 +122,14 @@ def lambda_handler(event, context):
     changelog = build_changelog(old_services, services, existing)
     new_changes = len(changelog) - len(existing)
     print(f"[changelog] {new_changes} new changes detected")
+
+    # Persist to DynamoDB
+    if new_changes > 0:
+        new_entries = changelog[:new_changes]
+        dynamo_written = write_changes("aws", new_entries)
+        print(f"[dynamo] {dynamo_written} changes written")
+    update_service_data("aws", services)
+    print(f"[dynamo] service data updated")
 
     # Write services JSON
     output = {

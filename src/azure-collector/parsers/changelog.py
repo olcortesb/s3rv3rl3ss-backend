@@ -44,7 +44,10 @@ def _diff_news(old_news, new_news):
     changes = []
     for n in new_news:
         if n["title"] not in old_titles:
-            changes.append({"type": "new_news", "detail": n["title"]})
+            entry = {"type": "new_news", "detail": n["title"]}
+            if n.get("url"):
+                entry["url"] = n["url"]
+            changes.append(entry)
     return changes
 
 
