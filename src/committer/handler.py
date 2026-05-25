@@ -59,24 +59,34 @@ def get_file_sha(token, repo_path):
         raise
 
 
-def commit_file(token, repo_path, content, message):
-    """Create or update a file via GitHub Contents API."""
-    sha = get_file_sha(token, repo_path)
+def commit_file(token, repo_path, content, message, retries=3):
+    """Create or update a file via GitHub Contents API with retry on 409."""
+    import time
+
     encoded = base64.b64encode(content.encode("utf-8")).decode("utf-8")
 
-    payload = {
-        "message": message,
-        "content": encoded,
-        "branch": GITHUB_BRANCH,
-        "committer": {
-            "name": "s3rv3rl3ss-bot",
-            "email": "s3rv3rl3ss-bot@automated.dev",
-        },
-    }
-    if sha:
-        payload["sha"] = sha
+    for attempt in range(retries):
+        sha = get_file_sha(token, repo_path)
+        payload = {
+            "message": message,
+            "content": encoded,
+            "branch": GITHUB_BRANCH,
+            "committer": {
+                "name": "s3rv3rl3ss-bot",
+                "email": "s3rv3rl3ss-bot@automated.dev",
+            },
+        }
+        if sha:
+            payload["sha"] = sha
 
-    github_api("PUT", f"contents/{repo_path}", token, payload)
+        try:
+            github_api("PUT", f"contents/{repo_path}", token, payload)
+            return
+        except RuntimeError as e:
+            if "409" in str(e) and attempt < retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            raise
 
 
 def lambda_handler(event, context):
