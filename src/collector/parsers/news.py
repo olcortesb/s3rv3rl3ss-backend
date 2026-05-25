@@ -50,12 +50,14 @@ def fetch_news(keywords, blog_feeds=None):
             blog_items = _fetch_feed(feed_url, keywords, remaining)
             news.extend(blog_items)
 
-    # Deduplicate by title and sort by date desc
+    # Deduplicate by title (normalized) and sort by date desc
     seen = set()
     unique = []
     for n in news:
-        if n["title"] not in seen:
-            seen.add(n["title"])
+        normalized = ' '.join(n["title"].split())
+        if normalized not in seen:
+            seen.add(normalized)
+            n["title"] = normalized
             unique.append(n)
     unique.sort(key=lambda x: x["date"], reverse=True)
 
