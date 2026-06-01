@@ -191,6 +191,31 @@ Resources:
             Description: Generates comparisons after all collectors finish
             Enabled: true
 
+  ToolsCollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/tools-collector/
+      Description: Collects version info for local dev tools from GitHub
+      Architectures:
+        - arm64
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/tools.json
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 7 * * ? *)
+            Description: Collects local dev tools data daily (1h after providers)
+            Enabled: true
+
   ChangelogFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -298,6 +323,8 @@ Outputs:
     Value: !GetAtt CommitterFunction.Arn
   ComparisonsFunctionArn:
     Value: !GetAtt ComparisonsFunction.Arn
+  ToolsCollectorFunctionArn:
+    Value: !GetAtt ToolsCollectorFunction.Arn
   ChangelogFunctionArn:
     Value: !GetAtt ChangelogFunction.Arn
   MetricsFunctionArn:
