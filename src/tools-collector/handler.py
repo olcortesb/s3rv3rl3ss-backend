@@ -110,12 +110,24 @@ def lambda_handler(event, context):
         # Try scraping services, fallback to static
         parser = PARSERS.get(tool_id)
         scraped_services = parser.fetch_services() if parser else None
-        services = scraped_services if scraped_services else tool["services"]
-        if scraped_services:
-            print(f"[tools] {tool['name']}: using scraped services ({len(services)})")
-        else:
-            print(f"[tools] {tool['name']}: using static fallback ({len(services)})")
 
+        # If Docker health data has services, prefer that (most accurate)
+        docker_data = docker_results.get(tool_id, {})
+        health_data = docker_data.get("health", {})
+        if health_data and hasattr(parser, "parse_health_services"):
+            health_services = parser.parse_health_services(health_data)
+            if health_services:
+                services = health_services
+            elif scraped_services:
+                services = scraped_services
+            else:
+                services = tool["services"]
+        elif scraped_services:
+            services = scraped_services
+        else:
+            services = tool["services"]
+
+        print(f"[tools] {tool['name']}: {len(services)} services")
         # Merge Docker results if available
         docker_data = docker_results.get(tool_id, {})
         performance = tool.get("performance", {})

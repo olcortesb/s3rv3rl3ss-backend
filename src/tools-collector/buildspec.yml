@@ -74,7 +74,7 @@ phases:
         echo "$R3," >> /tmp/results.json
 
         # RobotoCore
-        R4=$(measure_tool "robotocore" "robotocore/robotocore:latest" 4569 "/health")
+        R4=$(measure_tool "robotocore" "jackdanger/robotocore:latest" 4569 "/_robotocore/health")
         echo "$R4" >> /tmp/results.json
 
         echo "]" >> /tmp/results.json

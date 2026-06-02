@@ -34,3 +34,14 @@ def fetch_services():
     except (HTTPError, Exception) as e:
         print(f"[floci] Error scraping services: {e}")
     return None
+
+
+def parse_health_services(health_data):
+    """Extract service names from health endpoint response."""
+    if not health_data or "services" not in health_data:
+        return None
+    services = list(health_data["services"].keys())
+    if services:
+        print(f"[floci] Got {len(services)} services from health endpoint")
+        return services
+    return None

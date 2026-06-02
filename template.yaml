@@ -234,18 +234,30 @@ Resources:
         BuildSpec: |
           version: 0.2
           phases:
+            pre_build:
+              commands:
+                - echo "Logging into Docker Hub..."
+                - DOCKER_CREDS=$(aws secretsmanager get-secret-value --secret-id s3rv3rl3ss/dockerhub --region us-east-1 --query SecretString --output text)
+                - echo $DOCKER_CREDS | python3 -c "import sys,json;c=json.load(sys.stdin);print(c['password'])" | docker login -u $(echo $DOCKER_CREDS | python3 -c "import sys,json;c=json.load(sys.stdin);print(c['username'])") --password-stdin
+                - echo "Pre-pulling all images..."
+                - docker pull localstack/localstack:latest
+                - docker pull ministackorg/ministack:latest
+                - docker pull floci/floci:latest
+                - docker pull jackdanger/robotocore:latest
             build:
               commands:
                 - |
                   measure_tool() {
                     local id=$1 image=$2 port=$3 health=$4
-                    docker pull "$image" > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then
+                    echo "=== Measuring $id ==="
+                    if ! docker image inspect "$image" > /dev/null 2>&1; then
+                      echo "ERROR: Image $image not found locally"
                       echo "{\"id\":\"$id\",\"imageSize\":\"\",\"startupMs\":0,\"memoryIdle\":\"\",\"services\":[]}" >> /tmp/results.json
                       return
                     fi
                     SIZE=$(docker images "$image" --format "{{.Size}}" | head -1)
-                    CONTAINER_ID=$(docker run -d -p ${port}:4566 "$image" 2>/dev/null)
+                    CONTAINER_ID=$(docker run -d -p ${port}:4566 "$image")
+                    echo "Container: $CONTAINER_ID"
                     START=$(date +%s%N)
                     for i in $(seq 1 90); do
                       curl -sf "http://localhost:${port}${health}" > /dev/null 2>&1 && break
@@ -253,9 +265,11 @@ Resources:
                     done
                     END=$(date +%s%N)
                     MS=$(( (END - START) / 1000000 ))
+                    echo "Startup: ${MS}ms"
                     sleep 3
                     MEM=$(docker stats --no-stream --format "{{.MemUsage}}" "$CONTAINER_ID" 2>/dev/null | cut -d'/' -f1 | xargs)
                     HEALTH_RESP=$(curl -sf "http://localhost:${port}${health}" 2>/dev/null || echo "{}")
+                    echo "Health response length: $(echo $HEALTH_RESP | wc -c)"
                     docker stop "$CONTAINER_ID" > /dev/null 2>&1
                     docker rm "$CONTAINER_ID" > /dev/null 2>&1
                     echo "{\"id\":\"$id\",\"imageSize\":\"$SIZE\",\"startupMs\":$MS,\"memoryIdle\":\"$MEM\",\"health\":$HEALTH_RESP}" >> /tmp/results.json
@@ -266,7 +280,11 @@ Resources:
                   measure_tool "ministack" "ministackorg/ministack:latest" 4567 "/_ministack/health"
                   echo "," >> /tmp/results.json
                   measure_tool "floci" "floci/floci:latest" 4568 "/_localstack/health"
+                  echo "," >> /tmp/results.json
+                  measure_tool "robotocore" "jackdanger/robotocore:latest" 4569 "/_robotocore/health"
                   echo "]" >> /tmp/results.json
+                  echo "=== Final results ==="
+                  cat /tmp/results.json
             post_build:
               commands:
                 - aws s3 cp /tmp/results.json "s3://${BUCKET_NAME}/${S3_KEY}" --content-type application/json
@@ -303,6 +321,10 @@ Resources:
                 Action:
                   - s3:PutObject
                 Resource: !Sub "${DataBucket.Arn}/data/tools-docker.json"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: "arn:aws:secretsmanager:us-east-1:536395113578:secret:s3rv3rl3ss/dockerhub-*"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup

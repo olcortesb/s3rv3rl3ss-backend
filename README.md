@@ -61,6 +61,13 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
   - RobotoCore: [GitHub README](https://github.com/robotocore/robotocore) (Native providers table)
 - **Docker metrics**: CodeBuild pulls images and measures real startup time, memory idle, and image size
 
+| Tool | Image | Health endpoint |
+|------|-------|-----------------|
+| LocalStack | `localstack/localstack:latest` | `/_localstack/health` |
+| MiniStack | `ministackorg/ministack:latest` | `/_ministack/health` |
+| Floci | `floci/floci:latest` | `/_localstack/health` |
+| RobotoCore | `jackdanger/robotocore:latest` | `/_robotocore/health` |
+
 ### Metrics Generator
 - Queries CloudWatch for Lambda invocations, duration, errors
 - Queries DynamoDB for item count
