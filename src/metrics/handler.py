@@ -128,16 +128,22 @@ def _calculate_cost(metrics_today, metrics_month):
     lambda_free_tier = 400_000
     lambda_effective = max(0, gb_seconds_month - lambda_free_tier) * PRICE_PER_GB_SECOND
 
+    # CodeBuild cost: BUILD_GENERAL1_MEDIUM = $0.005/min, ~2 min/day
+    codebuild_cost = 0.005 * 2 * 30  # ~$0.30/month
+
+    total = 0.40 + lambda_effective + codebuild_cost
+
     return {
         "monthly": {
-            "total": f"${0.40 + lambda_effective:.2f}",
+            "total": f"${total:.2f}",
             "lambda": f"${lambda_effective:.4f}" if lambda_effective > 0 else "$0.00 (free tier)",
             "dynamodb": "$0.00 (free tier)",
             "s3": "$0.00 (free tier)",
             "secretsManager": "$0.40",
             "eventbridge": "$0.00 (free tier)",
+            "codebuild": f"~${codebuild_cost:.2f}",
         },
-        "note": "Only Secrets Manager has cost outside free tier",
+        "note": "Secrets Manager + CodeBuild outside free tier",
     }
 
 

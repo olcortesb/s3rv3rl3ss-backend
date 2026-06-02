@@ -1,0 +1,96 @@
+version: 0.2
+
+env:
+  variables:
+    BUCKET_NAME: ""
+    S3_KEY: "data/tools-docker.json"
+
+phases:
+  pre_build:
+    commands:
+      - echo "Pulling Docker images..."
+  build:
+    commands:
+      - |
+        cat > /tmp/measure.sh << 'EOF'
+        #!/bin/bash
+        set -e
+
+        RESULTS="[]"
+
+        measure_tool() {
+          local id=$1
+          local image=$2
+          local port=${3:-4566}
+          local health_path=${4:-"/_localstack/health"}
+
+          echo "=== $id: pulling $image ==="
+          docker pull "$image" 2>/dev/null
+
+          # Get image size
+          SIZE=$(docker images "$image" --format "{{.Size}}" | head -1)
+
+          # Run container
+          echo "=== $id: starting container ==="
+          CONTAINER_ID=$(docker run -d -p ${port}:4566 "$image" 2>/dev/null)
+
+          # Wait for ready
+          STARTUP_START=$(date +%s%N)
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:${port}${health_path}" > /dev/null 2>&1; then
+              break
+            fi
+            sleep 0.5
+          done
+          STARTUP_END=$(date +%s%N)
+          STARTUP_MS=$(( (STARTUP_END - STARTUP_START) / 1000000 ))
+
+          # Get memory
+          MEMORY=$(docker stats --no-stream --format "{{.MemUsage}}" "$CONTAINER_ID" 2>/dev/null | cut -d'/' -f1 | xargs)
+
+          # Try to get services list
+          SERVICES=""
+          HEALTH=$(curl -sf "http://localhost:${port}${health_path}" 2>/dev/null || echo "{}")
+
+          # Stop container
+          docker stop "$CONTAINER_ID" > /dev/null 2>&1
+          docker rm "$CONTAINER_ID" > /dev/null 2>&1
+
+          echo "{\"id\":\"$id\",\"imageSize\":\"$SIZE\",\"startupMs\":$STARTUP_MS,\"memoryIdle\":\"$MEMORY\",\"health\":$HEALTH}"
+        }
+
+        echo "[" > /tmp/results.json
+
+        # LocalStack
+        R1=$(measure_tool "localstack" "localstack/localstack:latest" 4566 "/_localstack/health")
+        echo "$R1," >> /tmp/results.json
+
+        # MiniStack
+        R2=$(measure_tool "ministack" "ministackorg/ministack:latest" 4567 "/_ministack/health")
+        echo "$R2," >> /tmp/results.json
+
+        # Floci
+        R3=$(measure_tool "floci" "floci/floci:latest" 4568 "/_localstack/health")
+        echo "$R3," >> /tmp/results.json
+
+        # RobotoCore
+        R4=$(measure_tool "robotocore" "robotocore/robotocore:latest" 4569 "/health")
+        echo "$R4" >> /tmp/results.json
+
+        echo "]" >> /tmp/results.json
+
+        cat /tmp/results.json
+        EOF
+        chmod +x /tmp/measure.sh
+        bash /tmp/measure.sh
+
+  post_build:
+    commands:
+      - echo "Uploading results to S3..."
+      - aws s3 cp /tmp/results.json "s3://${BUCKET_NAME}/${S3_KEY}" --content-type application/json
+      - echo "Done"
+
+artifacts:
+  files:
+    - /tmp/results.json
+  discard-paths: yes

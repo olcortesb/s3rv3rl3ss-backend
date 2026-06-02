@@ -205,9 +205,16 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref DataBucket
           S3_KEY: data/tools.json
+          DOCKER_PROJECT_NAME: !Ref ToolsDockerProject
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - codebuild:StartBuild
+                - codebuild:BatchGetBuilds
+              Resource: !GetAtt ToolsDockerProject.Arn
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -215,6 +222,93 @@ Resources:
             Schedule: cron(0 7 * * ? *)
             Description: Collects local dev tools data daily (1h after providers)
             Enabled: true
+
+  ToolsDockerProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: s3rv3rl3ss-tools-docker
+      Description: Pulls and measures Docker images for AWS local dev tools
+      ServiceRole: !GetAtt ToolsDockerRole.Arn
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - |
+                  measure_tool() {
+                    local id=$1 image=$2 port=$3 health=$4
+                    docker pull "$image" > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then
+                      echo "{\"id\":\"$id\",\"imageSize\":\"\",\"startupMs\":0,\"memoryIdle\":\"\",\"services\":[]}" >> /tmp/results.json
+                      return
+                    fi
+                    SIZE=$(docker images "$image" --format "{{.Size}}" | head -1)
+                    CONTAINER_ID=$(docker run -d -p ${port}:4566 "$image" 2>/dev/null)
+                    START=$(date +%s%N)
+                    for i in $(seq 1 90); do
+                      curl -sf "http://localhost:${port}${health}" > /dev/null 2>&1 && break
+                      sleep 0.5
+                    done
+                    END=$(date +%s%N)
+                    MS=$(( (END - START) / 1000000 ))
+                    sleep 3
+                    MEM=$(docker stats --no-stream --format "{{.MemUsage}}" "$CONTAINER_ID" 2>/dev/null | cut -d'/' -f1 | xargs)
+                    HEALTH_RESP=$(curl -sf "http://localhost:${port}${health}" 2>/dev/null || echo "{}")
+                    docker stop "$CONTAINER_ID" > /dev/null 2>&1
+                    docker rm "$CONTAINER_ID" > /dev/null 2>&1
+                    echo "{\"id\":\"$id\",\"imageSize\":\"$SIZE\",\"startupMs\":$MS,\"memoryIdle\":\"$MEM\",\"health\":$HEALTH_RESP}" >> /tmp/results.json
+                  }
+                  echo "[" > /tmp/results.json
+                  measure_tool "localstack" "localstack/localstack:latest" 4566 "/_localstack/health"
+                  echo "," >> /tmp/results.json
+                  measure_tool "ministack" "ministackorg/ministack:latest" 4567 "/_ministack/health"
+                  echo "," >> /tmp/results.json
+                  measure_tool "floci" "floci/floci:latest" 4568 "/_localstack/health"
+                  echo "]" >> /tmp/results.json
+            post_build:
+              commands:
+                - aws s3 cp /tmp/results.json "s3://${BUCKET_NAME}/${S3_KEY}" --content-type application/json
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:7.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUCKET_NAME
+            Value: !Ref DataBucket
+          - Name: S3_KEY
+            Value: data/tools-docker.json
+      Artifacts:
+        Type: NO_ARTIFACTS
+      TimeoutInMinutes: 15
+
+  ToolsDockerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ToolsDockerPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub "${DataBucket.Arn}/data/tools-docker.json"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
 
   ChangelogFunction:
     Type: AWS::Serverless::Function

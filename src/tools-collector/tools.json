@@ -86,11 +86,7 @@
     "technology": ["Go", "Docker"],
     "license": "Apache 2.0",
     "price": "Free",
-    "performance": {
-      "startupTime": "~3s",
-      "memoryIdle": "~50MB",
-      "imageSize": "~150 MB"
-    },
+    "performance": {},
     "services": [
       "Lambda", "DynamoDB", "S3", "SQS", "SNS", "API Gateway v1",
       "IAM", "KMS", "EventBridge", "CloudWatch"

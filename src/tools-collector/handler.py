@@ -18,9 +18,11 @@ from parsers import floci as floci_parser
 from parsers import robotocore as robotocore_parser
 
 s3 = boto3.client("s3")
+codebuild = boto3.client("codebuild")
 
 BUCKET = os.environ["BUCKET_NAME"]
 S3_KEY = os.environ.get("S3_KEY", "data/tools.json")
+DOCKER_PROJECT = os.environ.get("DOCKER_PROJECT_NAME", "")
 
 # Load static tool definitions
 TOOLS = json.loads(Path(__file__).with_name("tools.json").read_text())
@@ -66,9 +68,36 @@ def _github_stars(repo):
         return 0
 
 
+def _start_docker_build():
+    """Start CodeBuild project to measure Docker images. Non-blocking."""
+    if not DOCKER_PROJECT:
+        return
+    try:
+        codebuild.start_build(projectName=DOCKER_PROJECT)
+        print(f"[tools] Started CodeBuild project: {DOCKER_PROJECT}")
+    except Exception as e:
+        print(f"[tools] Error starting CodeBuild: {e}")
+
+
+def _get_docker_results():
+    """Read previous Docker measurement results from S3."""
+    try:
+        resp = s3.get_object(Bucket=BUCKET, Key="data/tools-docker.json")
+        data = json.loads(resp["Body"].read().decode("utf-8"))
+        return {item["id"]: item for item in data}
+    except Exception:
+        return {}
+
+
 def lambda_handler(event, context):
     today = date.today().isoformat()
     output_tools = []
+
+    # Start Docker measurements (async, results available next run)
+    _start_docker_build()
+
+    # Read previous Docker results if available
+    docker_results = _get_docker_results()
 
     for tool in TOOLS:
         repo = tool["repo"]
@@ -87,6 +116,16 @@ def lambda_handler(event, context):
         else:
             print(f"[tools] {tool['name']}: using static fallback ({len(services)})")
 
+        # Merge Docker results if available
+        docker_data = docker_results.get(tool_id, {})
+        performance = tool.get("performance", {})
+        if docker_data:
+            performance = {
+                "startupTime": f"{docker_data.get('startupMs', 0)}ms",
+                "memoryIdle": docker_data.get("memoryIdle", performance.get("memoryIdle", "")),
+                "imageSize": docker_data.get("imageSize", performance.get("imageSize", "")),
+            }
+
         entry = {
             "id": tool_id,
             "name": tool["name"],
@@ -98,7 +137,7 @@ def lambda_handler(event, context):
             "technology": tool["technology"],
             "license": tool["license"],
             "price": tool["price"],
-            "performance": tool["performance"],
+            "performance": performance,
             "services": services,
             "paidServices": tool.get("paidServices", []),
         }
