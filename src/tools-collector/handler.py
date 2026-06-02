@@ -1,121 +1,37 @@
 """
 Tools Collector: fetches latest version info from GitHub for local dev tools.
-Services and performance data are static (from READMEs).
+Services are scraped from each tool's docs with static fallback.
 """
 
 import json
 import os
 from datetime import date
+from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError
 
 import boto3
+
+from parsers import localstack as localstack_parser
+from parsers import ministack as ministack_parser
+from parsers import floci as floci_parser
+from parsers import robotocore as robotocore_parser
 
 s3 = boto3.client("s3")
 
 BUCKET = os.environ["BUCKET_NAME"]
 S3_KEY = os.environ.get("S3_KEY", "data/tools.json")
 
-TOOLS = [
-    {
-        "id": "localstack",
-        "name": "LocalStack",
-        "description": "Cloud service emulator that runs in a single container on your laptop or in your CI environment",
-        "url": "https://localstack.cloud/",
-        "repo": "localstack/localstack",
-        "technology": ["Python", "Docker"],
-        "license": "BSL (restricted) / Proprietary (Pro)",
-        "price": "Now paid / $35/mo (Pro)",
-        "performance": {
-            "startupTime": "~15-30s",
-            "memoryIdle": "~500MB",
-            "imageSize": "~1 GB",
-        },
-        "services": [
-            "S3", "SQS", "SNS", "API Gateway v1", "API Gateway v2", "Route53", "Firehose",
-        ],
-        "paidServices": [
-            "Lambda", "DynamoDB", "IAM", "SSM", "EventBridge", "CloudFormation",
-            "KMS", "Kinesis", "Step Functions", "SES", "CloudWatch", "Secrets Manager",
-            "ECR", "ECS", "EKS", "Cognito", "EC2", "RDS", "ElastiCache",
-            "Glue", "Athena", "AppSync", "CloudFront", "OpenSearch", "WAF",
-            "EMR", "EBS", "EFS", "ALB/ELBv2", "Batch",
-        ],
-    },
-    {
-        "id": "ministack",
-        "name": "MiniStack",
-        "description": "Free, open-source AWS emulator. 60+ services on a single Docker container at port 4566. Drop-in LocalStack replacement",
-        "url": "https://ministack.org/",
-        "repo": "ministackorg/ministack",
-        "technology": ["Python", "Docker"],
-        "license": "MIT",
-        "price": "Free",
-        "performance": {
-            "startupTime": "~2s",
-            "memoryIdle": "~30MB",
-            "imageSize": "~250 MB",
-        },
-        "services": [
-            "Lambda", "DynamoDB", "S3", "SQS", "SNS", "API Gateway v1", "API Gateway v2",
-            "CloudFormation", "IAM", "KMS", "Kinesis", "EventBridge", "Step Functions",
-            "SES", "CloudWatch", "Secrets Manager", "ECR", "ECS", "EKS", "Route53", "SSM",
-            "Cognito", "EC2", "RDS", "ElastiCache", "Glue", "Athena", "AppSync",
-            "CloudFront", "Firehose", "OpenSearch", "WAF", "CodeBuild", "Batch",
-            "EMR", "EBS", "EFS", "ALB/ELBv2",
-        ],
-        "paidServices": [],
-    },
-    {
-        "id": "floci",
-        "name": "Floci",
-        "description": "Free, open-source local AWS emulator. 52+ services, real Docker for Lambda/RDS/ECS/EC2. Drop-in LocalStack replacement",
-        "url": "https://floci.io/floci/",
-        "repo": "floci-io/floci",
-        "technology": ["Java", "Docker"],
-        "license": "MIT",
-        "price": "Free",
-        "performance": {
-            "startupTime": "~24ms",
-            "memoryIdle": "~13MB",
-            "imageSize": "~90 MB",
-        },
-        "services": [
-            "Lambda", "DynamoDB", "DynamoDB Streams", "S3", "SQS", "SNS",
-            "API Gateway v1", "API Gateway v2", "CloudFormation",
-            "IAM", "STS", "KMS", "Kinesis", "EventBridge", "EventBridge Pipes",
-            "EventBridge Scheduler", "Step Functions", "SES", "SES v2",
-            "CloudWatch", "Secrets Manager", "ECR", "ECS", "EKS", "EC2",
-            "Route53", "SSM", "Cognito", "RDS", "ElastiCache", "Glue",
-            "Athena", "AppSync", "Firehose", "OpenSearch", "Neptune", "MSK",
-            "CodeBuild", "CodeDeploy", "Auto Scaling", "ALB/ELBv2",
-            "ACM", "AppConfig", "AWS Backup", "AWS Config",
-            "Transfer Family", "Textract", "Bedrock Runtime",
-            "Cost Explorer", "Pricing",
-        ],
-        "paidServices": [],
-    },
-    {
-        "id": "robotocore",
-        "name": "RobotoCore",
-        "description": "AWS service emulator with focus on high-fidelity API compatibility",
-        "url": "https://github.com/robotocore/robotocore",
-        "repo": "robotocore/robotocore",
-        "technology": ["Go", "Docker"],
-        "license": "Apache 2.0",
-        "price": "Free",
-        "performance": {
-            "startupTime": "~3s",
-            "memoryIdle": "~50MB",
-            "imageSize": "~150 MB",
-        },
-        "services": [
-            "Lambda", "DynamoDB", "S3", "SQS", "SNS", "API Gateway v1",
-            "IAM", "KMS", "EventBridge", "CloudWatch",
-        ],
-        "paidServices": [],
-    },
-]
+# Load static tool definitions
+TOOLS = json.loads(Path(__file__).with_name("tools.json").read_text())
+
+# Parser map: tool_id -> parser module
+PARSERS = {
+    "localstack": localstack_parser,
+    "ministack": ministack_parser,
+    "floci": floci_parser,
+    "robotocore": robotocore_parser,
+}
 
 
 def _github_latest_version(repo):
@@ -156,13 +72,23 @@ def lambda_handler(event, context):
 
     for tool in TOOLS:
         repo = tool["repo"]
+        tool_id = tool["id"]
         print(f"[tools] Processing {tool['name']} ({repo})")
 
         version = _github_latest_version(repo)
         stars = _github_stars(repo)
 
+        # Try scraping services, fallback to static
+        parser = PARSERS.get(tool_id)
+        scraped_services = parser.fetch_services() if parser else None
+        services = scraped_services if scraped_services else tool["services"]
+        if scraped_services:
+            print(f"[tools] {tool['name']}: using scraped services ({len(services)})")
+        else:
+            print(f"[tools] {tool['name']}: using static fallback ({len(services)})")
+
         entry = {
-            "id": tool["id"],
+            "id": tool_id,
             "name": tool["name"],
             "description": tool["description"],
             "url": tool["url"],
@@ -173,11 +99,11 @@ def lambda_handler(event, context):
             "license": tool["license"],
             "price": tool["price"],
             "performance": tool["performance"],
-            "services": tool["services"],
-            "paidServices": tool["paidServices"],
+            "services": services,
+            "paidServices": tool.get("paidServices", []),
         }
         output_tools.append(entry)
-        print(f"[tools] {tool['name']}: v{version}, {stars} stars")
+        print(f"[tools] {tool['name']}: v{version}, {stars} stars, {len(services)} services")
 
     output = {
         "lastUpdated": today,

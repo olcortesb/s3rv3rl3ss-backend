@@ -1,0 +1,100 @@
+[
+  {
+    "id": "localstack",
+    "name": "LocalStack",
+    "description": "Cloud service emulator that runs in a single container on your laptop or in your CI environment",
+    "url": "https://localstack.cloud/",
+    "repo": "localstack/localstack",
+    "technology": ["Python", "Docker"],
+    "license": "BSL (restricted) / Proprietary (Pro)",
+    "price": "Now paid / $35/mo (Pro)",
+    "performance": {
+      "startupTime": "~15-30s",
+      "memoryIdle": "~500MB",
+      "imageSize": "~1 GB"
+    },
+    "services": [
+      "S3", "SQS", "SNS", "API Gateway v1", "API Gateway v2", "Route53", "Firehose"
+    ],
+    "paidServices": [
+      "Lambda", "DynamoDB", "IAM", "SSM", "EventBridge", "CloudFormation",
+      "KMS", "Kinesis", "Step Functions", "SES", "CloudWatch", "Secrets Manager",
+      "ECR", "ECS", "EKS", "Cognito", "EC2", "RDS", "ElastiCache",
+      "Glue", "Athena", "AppSync", "CloudFront", "OpenSearch", "WAF",
+      "EMR", "EBS", "EFS", "ALB/ELBv2", "Batch"
+    ]
+  },
+  {
+    "id": "ministack",
+    "name": "MiniStack",
+    "description": "Free, open-source AWS emulator. 60+ services on a single Docker container at port 4566. Drop-in LocalStack replacement",
+    "url": "https://ministack.org/",
+    "repo": "ministackorg/ministack",
+    "technology": ["Python", "Docker"],
+    "license": "MIT",
+    "price": "Free",
+    "performance": {
+      "startupTime": "~2s",
+      "memoryIdle": "~30MB",
+      "imageSize": "~250 MB"
+    },
+    "services": [
+      "Lambda", "DynamoDB", "S3", "SQS", "SNS", "API Gateway v1", "API Gateway v2",
+      "CloudFormation", "IAM", "KMS", "Kinesis", "EventBridge", "Step Functions",
+      "SES", "CloudWatch", "Secrets Manager", "ECR", "ECS", "EKS", "Route53", "SSM",
+      "Cognito", "EC2", "RDS", "ElastiCache", "Glue", "Athena", "AppSync",
+      "CloudFront", "Firehose", "OpenSearch", "WAF", "CodeBuild", "Batch",
+      "EMR", "EBS", "EFS", "ALB/ELBv2"
+    ],
+    "paidServices": []
+  },
+  {
+    "id": "floci",
+    "name": "Floci",
+    "description": "Free, open-source local AWS emulator. 52+ services, real Docker for Lambda/RDS/ECS/EC2. Drop-in LocalStack replacement",
+    "url": "https://floci.io/floci/",
+    "repo": "floci-io/floci",
+    "technology": ["Java", "Docker"],
+    "license": "MIT",
+    "price": "Free",
+    "performance": {
+      "startupTime": "~24ms",
+      "memoryIdle": "~13MB",
+      "imageSize": "~90 MB"
+    },
+    "services": [
+      "Lambda", "DynamoDB", "DynamoDB Streams", "S3", "SQS", "SNS",
+      "API Gateway v1", "API Gateway v2", "CloudFormation",
+      "IAM", "STS", "KMS", "Kinesis", "EventBridge", "EventBridge Pipes",
+      "EventBridge Scheduler", "Step Functions", "SES", "SES v2",
+      "CloudWatch", "Secrets Manager", "ECR", "ECS", "EKS", "EC2",
+      "Route53", "SSM", "Cognito", "RDS", "ElastiCache", "Glue",
+      "Athena", "AppSync", "Firehose", "OpenSearch", "Neptune", "MSK",
+      "CodeBuild", "CodeDeploy", "Auto Scaling", "ALB/ELBv2",
+      "ACM", "AppConfig", "AWS Backup", "AWS Config",
+      "Transfer Family", "Textract", "Bedrock Runtime",
+      "Cost Explorer", "Pricing"
+    ],
+    "paidServices": []
+  },
+  {
+    "id": "robotocore",
+    "name": "RobotoCore",
+    "description": "AWS service emulator with focus on high-fidelity API compatibility",
+    "url": "https://github.com/robotocore/robotocore",
+    "repo": "robotocore/robotocore",
+    "technology": ["Go", "Docker"],
+    "license": "Apache 2.0",
+    "price": "Free",
+    "performance": {
+      "startupTime": "~3s",
+      "memoryIdle": "~50MB",
+      "imageSize": "~150 MB"
+    },
+    "services": [
+      "Lambda", "DynamoDB", "S3", "SQS", "SNS", "API Gateway v1",
+      "IAM", "KMS", "EventBridge", "CloudWatch"
+    ],
+    "paidServices": []
+  }
+]
