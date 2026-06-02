@@ -108,20 +108,16 @@ def lambda_handler(event, context):
         version = _github_latest_version(repo)
         stars = _github_stars(repo)
 
-        # Try scraping services, fallback to static
+        # Get services from Docker health data (most accurate)
         parser = PARSERS.get(tool_id)
-        scraped_services = parser.fetch_services() if parser else None
-
-        # If Docker health data has services, prefer that (most accurate)
         docker_data = docker_results.get(tool_id, {})
         health_data = docker_data.get("health", {})
         paid_services = tool.get("paidServices", [])
         service_meta = {}
 
-        if health_data and hasattr(parser, "parse_health_services"):
+        if health_data and parser:
             health_result = parser.parse_health_services(health_data)
             if health_result and isinstance(health_result, dict):
-                # Parser returned structured data
                 services = health_result.get("services", [])
                 paid_services = health_result.get("paid", paid_services)
                 if "native" in health_result:
@@ -129,12 +125,8 @@ def lambda_handler(event, context):
                     service_meta["moto"] = health_result["moto"]
             elif health_result and isinstance(health_result, list):
                 services = health_result
-            elif scraped_services:
-                services = scraped_services
             else:
                 services = tool["services"]
-        elif scraped_services:
-            services = scraped_services
         else:
             services = tool["services"]
 
