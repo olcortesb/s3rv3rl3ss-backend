@@ -23,16 +23,6 @@ STACK_PREFIX = "s3rv3rl3ss-backend"
 PRICE_PER_GB_SECOND = 0.0000133334
 PRICE_PER_REQUEST = 0.20 / 1_000_000
 
-# Function names to monitor
-FUNCTIONS = [
-    "CollectorFunction",
-    "GcpCollectorFunction",
-    "AzureCollectorFunction",
-    "ComparisonsFunction",
-    "ChangelogFunction",
-    "CommitterFunction",
-]
-
 
 def _get_lambda_metrics(function_prefix, start, end, period):
     """Get invocations, duration, and errors for all functions."""
@@ -128,10 +118,13 @@ def _calculate_cost(metrics_today, metrics_month):
     lambda_free_tier = 400_000
     lambda_effective = max(0, gb_seconds_month - lambda_free_tier) * PRICE_PER_GB_SECOND
 
+    # Secrets Manager: $0.40/secret/month × 3 secrets
+    secrets_cost = 0.40 * 3
+
     # CodeBuild cost: BUILD_GENERAL1_MEDIUM = $0.005/min, ~2 min/day
     codebuild_cost = 0.005 * 2 * 30  # ~$0.30/month
 
-    total = 0.40 + lambda_effective + codebuild_cost
+    total = secrets_cost + lambda_effective + codebuild_cost
 
     return {
         "monthly": {
@@ -139,11 +132,11 @@ def _calculate_cost(metrics_today, metrics_month):
             "lambda": f"${lambda_effective:.4f}" if lambda_effective > 0 else "$0.00 (free tier)",
             "dynamodb": "$0.00 (free tier)",
             "s3": "$0.00 (free tier)",
-            "secretsManager": "$0.40",
+            "secretsManager": f"${secrets_cost:.2f}",
             "eventbridge": "$0.00 (free tier)",
             "codebuild": f"~${codebuild_cost:.2f}",
         },
-        "note": "Secrets Manager + CodeBuild outside free tier",
+        "note": "Secrets Manager (3 secrets) + CodeBuild outside free tier",
     }
 
 
