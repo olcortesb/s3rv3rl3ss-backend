@@ -16,6 +16,7 @@ from parsers import localstack as localstack_parser
 from parsers import ministack as ministack_parser
 from parsers import floci as floci_parser
 from parsers import robotocore as robotocore_parser
+from parsers.normalize import normalize_list, to_display_name
 
 s3 = boto3.client("s3")
 codebuild = boto3.client("codebuild")
@@ -138,6 +139,17 @@ def lambda_handler(event, context):
             services = tool["services"]
 
         print(f"[tools] {tool['name']}: {len(services)} services")
+        # Store raw count before normalization
+        raw_service_count = len(services)
+        raw_paid_count = len(paid_services)
+        # Normalize service names
+        services = normalize_list(services)
+        paid_services = normalize_list(paid_services)
+        if service_meta:
+            if "native" in service_meta:
+                service_meta["native"] = normalize_list(service_meta["native"])
+                service_meta["moto"] = normalize_list(service_meta["moto"])
+
         # Merge Docker results if available
         docker_data = docker_results.get(tool_id, {})
         performance = tool.get("performance", {})
@@ -161,16 +173,26 @@ def lambda_handler(event, context):
             "price": tool["price"],
             "performance": performance,
             "services": services,
+            "serviceCount": raw_service_count,
             "paidServices": paid_services,
+            "paidServiceCount": raw_paid_count,
         }
         if service_meta:
             entry["serviceMeta"] = service_meta
         output_tools.append(entry)
         print(f"[tools] {tool['name']}: v{version}, {stars} stars, {len(services)} services")
 
+    # Build display names map for all services
+    all_service_ids = set()
+    for t in output_tools:
+        all_service_ids.update(t["services"])
+        all_service_ids.update(t.get("paidServices", []))
+    display_names = {sid: to_display_name(sid) for sid in sorted(all_service_ids)}
+
     output = {
         "lastUpdated": today,
         "tools": output_tools,
+        "serviceDisplayNames": display_names,
     }
 
     s3.put_object(
