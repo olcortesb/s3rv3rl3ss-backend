@@ -114,10 +114,20 @@ def lambda_handler(event, context):
         # If Docker health data has services, prefer that (most accurate)
         docker_data = docker_results.get(tool_id, {})
         health_data = docker_data.get("health", {})
+        paid_services = tool.get("paidServices", [])
+        service_meta = {}
+
         if health_data and hasattr(parser, "parse_health_services"):
-            health_services = parser.parse_health_services(health_data)
-            if health_services:
-                services = health_services
+            health_result = parser.parse_health_services(health_data)
+            if health_result and isinstance(health_result, dict):
+                # Parser returned structured data
+                services = health_result.get("services", [])
+                paid_services = health_result.get("paid", paid_services)
+                if "native" in health_result:
+                    service_meta["native"] = health_result["native"]
+                    service_meta["moto"] = health_result["moto"]
+            elif health_result and isinstance(health_result, list):
+                services = health_result
             elif scraped_services:
                 services = scraped_services
             else:
@@ -151,8 +161,10 @@ def lambda_handler(event, context):
             "price": tool["price"],
             "performance": performance,
             "services": services,
-            "paidServices": tool.get("paidServices", []),
+            "paidServices": paid_services,
         }
+        if service_meta:
+            entry["serviceMeta"] = service_meta
         output_tools.append(entry)
         print(f"[tools] {tool['name']}: v{version}, {stars} stars, {len(services)} services")
 

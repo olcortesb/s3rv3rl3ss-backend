@@ -239,6 +239,7 @@ Resources:
                 - echo "Logging into Docker Hub..."
                 - DOCKER_CREDS=$(aws secretsmanager get-secret-value --secret-id s3rv3rl3ss/dockerhub --region us-east-1 --query SecretString --output text)
                 - echo $DOCKER_CREDS | python3 -c "import sys,json;c=json.load(sys.stdin);print(c['password'])" | docker login -u $(echo $DOCKER_CREDS | python3 -c "import sys,json;c=json.load(sys.stdin);print(c['username'])") --password-stdin
+                - export LOCALSTACK_AUTH_TOKEN=$(aws secretsmanager get-secret-value --secret-id s3rv3rl3ss/localstack --region us-east-1 --query SecretString --output text | python3 -c "import sys,json;print(json.load(sys.stdin)['auth_token'])")
                 - echo "Pre-pulling all images..."
                 - docker pull localstack/localstack:latest
                 - docker pull ministackorg/ministack:latest
@@ -256,7 +257,7 @@ Resources:
                       return
                     fi
                     SIZE=$(docker images "$image" --format "{{.Size}}" | head -1)
-                    CONTAINER_ID=$(docker run -d -p ${port}:4566 "$image")
+                    CONTAINER_ID=$(docker run -d -p ${port}:4566 ${EXTRA_ENV:-} "$image")
                     echo "Container: $CONTAINER_ID"
                     START=$(date +%s%N)
                     for i in $(seq 1 90); do
@@ -275,7 +276,7 @@ Resources:
                     echo "{\"id\":\"$id\",\"imageSize\":\"$SIZE\",\"startupMs\":$MS,\"memoryIdle\":\"$MEM\",\"health\":$HEALTH_RESP}" >> /tmp/results.json
                   }
                   echo "[" > /tmp/results.json
-                  measure_tool "localstack" "localstack/localstack:latest" 4566 "/_localstack/health"
+                  EXTRA_ENV="-e LOCALSTACK_AUTH_TOKEN=$LOCALSTACK_AUTH_TOKEN" measure_tool "localstack" "localstack/localstack:latest" 4566 "/_localstack/health"
                   echo "," >> /tmp/results.json
                   measure_tool "ministack" "ministackorg/ministack:latest" 4567 "/_ministack/health"
                   echo "," >> /tmp/results.json
@@ -324,7 +325,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
-                Resource: "arn:aws:secretsmanager:us-east-1:536395113578:secret:s3rv3rl3ss/dockerhub-*"
+                Resource:
+                  - "arn:aws:secretsmanager:us-east-1:536395113578:secret:s3rv3rl3ss/dockerhub-*"
+                  - "arn:aws:secretsmanager:us-east-1:536395113578:secret:s3rv3rl3ss/localstack-*"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
