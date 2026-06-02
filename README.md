@@ -6,17 +6,19 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 
 ![Architecture](image.png)
 
-1. **EventBridge Schedules** trigger 7 Lambda functions daily (staggered):
+1. **EventBridge Schedules** trigger 8 Lambda functions daily (staggered):
    - `06:00` → AWS Collector (22 services)
    - `06:15` → GCP Collector (18 services)
    - `06:30` → Azure Collector (17 services)
    - `06:45` → Comparisons Generator (cross-provider)
    - `06:50` → Changelog Generator (from DynamoDB)
    - `06:55` → Metrics Generator (CloudWatch + DynamoDB)
+   - `07:00` → Tools Collector (scrapes services from LocalStack, MiniStack, Floci, RobotoCore)
 2. Each **Collector** queries real APIs + static data → writes JSON to S3 + persists to DynamoDB
-3. **S3 ObjectCreated** event → **EventBridge** → triggers **CommitterFunction**
-4. **CommitterFunction** uses the GitHub Contents API to commit the file directly (1 commit per file)
-5. **AWS Amplify** detects the push and auto-deploys the frontend
+3. **Tools Collector** also triggers a **CodeBuild** project that `docker pull`s each tool image, measures startup time, memory, and image size, then writes `tools-docker.json` to S3
+4. **S3 ObjectCreated** event → **EventBridge** → triggers **CommitterFunction**
+5. **CommitterFunction** uses the GitHub Contents API to commit the file directly (1 commit per file)
+6. **AWS Amplify** detects the push and auto-deploys the frontend
 
 ## Data sources
 
@@ -49,6 +51,15 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 - Reads `CHANGE` items from DynamoDB (persisted by collectors)
 - Generates `changelog-{provider}.json` with URLs for news items
 - 90-day rolling window
+
+### Tools Collector
+- **Versions**: [GitHub Releases API](https://docs.github.com/en/rest/releases/releases)
+- **Services**: Scraped from each tool's docs/README:
+  - LocalStack: [docs.localstack.cloud/aws/services/](https://docs.localstack.cloud/aws/services/)
+  - MiniStack: [GitHub README](https://github.com/ministackorg/ministack) (Supported Services tables)
+  - Floci: [floci.io/floci/services/](https://floci.io/floci/services/) (sidebar nav)
+  - RobotoCore: [GitHub README](https://github.com/robotocore/robotocore) (Native providers table)
+- **Docker metrics**: CodeBuild pulls images and measures real startup time, memory idle, and image size
 
 ### Metrics Generator
 - Queries CloudWatch for Lambda invocations, duration, errors
@@ -135,15 +146,16 @@ python3 scripts/load_dynamo.py --region us-east-1
 
 ## Cost
 
-~$0.40/month total (only Secrets Manager outside free tier).
+~$0.70/month total.
 
 | Service | Cost |
 |---------|------|
-| Lambda (7 functions, arm64) | $0.00 (free tier) |
+| Lambda (8 functions, arm64) | $0.00 (free tier) |
 | DynamoDB (on-demand) | $0.00 (free tier) |
 | S3 (versioned) | $0.00 (free tier) |
 | EventBridge | $0.00 (free tier) |
 | Secrets Manager | $0.40/month |
+| CodeBuild (1 build/day, ~2 min) | ~$0.30/month |
 | Amplify (hosting) | $0.00 (free tier) |
 
 See [OPERATIONS.md](OPERATIONS.md) for manual commands, testing and troubleshooting.
