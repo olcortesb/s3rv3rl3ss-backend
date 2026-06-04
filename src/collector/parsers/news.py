@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 from urllib.request import urlopen
 
 WHATS_NEW_FEED = "https://aws.amazon.com/about-aws/whats-new/recent/feed/"
-NEWS_LIMIT = 10
+NEWS_LIMIT = 20
 
 
 def _parse_rss_date(pub):
@@ -22,7 +22,9 @@ def _fetch_feed(url, keywords, limit):
             root = ET.parse(resp).getroot()
         for item in root.iter('item'):
             title = item.findtext('title', '')
-            if keywords and not any(kw.lower() in title.lower() for kw in keywords):
+            description = item.findtext('description', '')
+            text = (title + " " + description).lower()
+            if keywords and not any(kw.lower() in text for kw in keywords):
                 continue
             pub = item.findtext('pubDate', '')
             items.append({

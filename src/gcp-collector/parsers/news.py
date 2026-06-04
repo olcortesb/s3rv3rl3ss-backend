@@ -26,7 +26,12 @@ RELEASE_FEEDS = {
     "secret-manager": "https://cloud.google.com/feeds/secret-manager-release-notes.xml",
     "cloud-build": "https://cloud.google.com/feeds/cloud-build-release-notes.xml",
     "vertex-ai": "https://cloud.google.com/feeds/vertex-ai-release-notes.xml",
+    "dataflow": "https://cloud.google.com/feeds/dataflow-release-notes.xml",
+    "dataproc-serverless": "https://cloud.google.com/feeds/dataproc-release-notes.xml",
 }
+
+# General GCP feed for services without specific feed
+GENERAL_FEED = "https://cloud.google.com/feeds/gcp-release-notes.xml"
 
 
 def _parse_atom_date(updated):
@@ -43,12 +48,19 @@ def _clean_html(text):
 def fetch_news(service_id):
     feed_url = RELEASE_FEEDS.get(service_id)
     if not feed_url:
-        return []
+        # Fallback to general feed filtered by service name
+        feed_url = GENERAL_FEED
 
     try:
         with urlopen(feed_url, timeout=10) as resp:
             root = ET.parse(resp).getroot()
         news = []
+
+        # If using general feed, filter by service_id keywords
+        filter_keywords = None
+        if feed_url == GENERAL_FEED:
+            filter_keywords = service_id.replace("-", " ").split()
+
         for entry in root.findall(f'{ATOM_NS}entry'):
             title = entry.findtext(f'{ATOM_NS}title', '')
             updated = entry.findtext(f'{ATOM_NS}updated', '')
@@ -56,6 +68,12 @@ def fetch_news(service_id):
             url = link_el.get('href', '') if link_el is not None else ''
             content = entry.findtext(f'{ATOM_NS}content', '')
             summary = _clean_html(content) if content else title
+
+            # Filter if using general feed
+            if filter_keywords:
+                text = (title + " " + summary).lower()
+                if not any(kw in text for kw in filter_keywords):
+                    continue
 
             news.append({
                 "date": _parse_atom_date(updated),

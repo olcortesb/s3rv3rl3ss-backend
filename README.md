@@ -54,19 +54,16 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 
 ### Tools Collector
 - **Versions**: [GitHub Releases API](https://docs.github.com/en/rest/releases/releases)
-- **Services**: Scraped from each tool's docs/README:
-  - LocalStack: [docs.localstack.cloud/aws/services/](https://docs.localstack.cloud/aws/services/)
-  - MiniStack: [GitHub README](https://github.com/ministackorg/ministack) (Supported Services tables)
-  - Floci: [floci.io/floci/services/](https://floci.io/floci/services/) (sidebar nav)
-  - RobotoCore: [GitHub README](https://github.com/robotocore/robotocore) (Native providers table)
+- **Services**: Detected from Docker health endpoints (CodeBuild runs each tool daily)
 - **Docker metrics**: CodeBuild pulls images and measures real startup time, memory idle, and image size
+- **Service normalization**: Canonical names mapped across tools for unified comparison
 
-| Tool | Image | Health endpoint |
-|------|-------|-----------------|
-| LocalStack | `localstack/localstack:latest` | `/_localstack/health` |
-| MiniStack | `ministackorg/ministack:latest` | `/_ministack/health` |
-| Floci | `floci/floci:latest` | `/_localstack/health` |
-| RobotoCore | `jackdanger/robotocore:latest` | `/_robotocore/health` |
+| Tool | Image | Port | Health endpoint | Services source |
+|------|-------|------|-----------------|-----------------|
+| LocalStack | `localstack/localstack:latest` | 4566 | `http://localhost:4566/_localstack/health` | All paid (requires `LOCALSTACK_AUTH_TOKEN`) |
+| MiniStack | `ministackorg/ministack:latest` | 4567 | `http://localhost:4567/_ministack/health` | Free |
+| Floci | `floci/floci:latest` | 4568 | `http://localhost:4568/_localstack/health` | Free |
+| RobotoCore | `jackdanger/robotocore:latest` | 4569 | `http://localhost:4569/_robotocore/health` | Free (native + moto) |
 
 ### Metrics Generator
 - Queries CloudWatch for Lambda invocations, duration, errors
@@ -153,7 +150,7 @@ python3 scripts/load_dynamo.py --region us-east-1
 
 ## Cost
 
-~$0.70/month total.
+~$1.50/month total.
 
 | Service | Cost |
 |---------|------|
@@ -161,7 +158,7 @@ python3 scripts/load_dynamo.py --region us-east-1
 | DynamoDB (on-demand) | $0.00 (free tier) |
 | S3 (versioned) | $0.00 (free tier) |
 | EventBridge | $0.00 (free tier) |
-| Secrets Manager | $0.40/month |
+| Secrets Manager (3 secrets) | $1.20/month |
 | CodeBuild (1 build/day, ~2 min) | ~$0.30/month |
 | Amplify (hosting) | $0.00 (free tier) |
 

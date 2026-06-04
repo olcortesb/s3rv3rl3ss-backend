@@ -12,7 +12,7 @@ SERVICES = [
         "calculatorUrl": "https://calculator.aws/createCalculator/Lambda",
         "url": "https://aws.amazon.com/lambda/",
         "icon": "⚡",
-        "news_keywords": ["Lambda"],
+        "news_keywords": ["Lambda", "serverless"],
         "blog_feeds": ["https://aws.amazon.com/blogs/compute/feed/"],
         "docs_limits_url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.md",
         "static_limits": [
@@ -54,7 +54,7 @@ SERVICES = [
         "calculatorUrl": "https://calculator.aws/createCalculator/DynamoDB",
         "url": "https://aws.amazon.com/dynamodb/",
         "icon": "🗄️",
-        "news_keywords": ["DynamoDB"],
+        "news_keywords": ["DynamoDB", "NoSQL"],
         "integrations_config": [
             {"sdk_client": "dynamodb", "shape_name": "StreamViewType", "label": "Stream View Types", "description": "Data captured in DynamoDB Streams for change data capture"},
         ],
@@ -107,7 +107,7 @@ SERVICES = [
         "calculatorUrl": "https://calculator.aws/createCalculator/APIGateway",
         "url": "https://aws.amazon.com/api-gateway/",
         "icon": "🔗",
-        "news_keywords": ["API Gateway"],
+        "news_keywords": ["API Gateway", "APIGW"],
         "integrations_config": [
             {"sdk_client": "apigateway", "shape_name": "IntegrationType", "label": "Integration Types", "description": "Backend integration methods for API endpoints"},
             {"sdk_client": "apigateway", "shape_name": "EndpointType", "label": "Endpoint Types", "description": "API endpoint deployment options"},
@@ -187,7 +187,7 @@ SERVICES = [
         "calculatorUrl": "https://calculator.aws/createCalculator/EventBridge",
         "url": "https://aws.amazon.com/eventbridge/",
         "icon": "📡",
-        "news_keywords": ["EventBridge"],
+        "news_keywords": ["EventBridge", "event bus"],
         "blog_feeds": ["https://aws.amazon.com/blogs/compute/feed/"],
         "static_limits": [
             {"name": "Event size", "value": "256 KB"},
@@ -255,7 +255,7 @@ SERVICES = [
         "pricingUrl": "https://aws.amazon.com/step-functions/pricing/",
         "url": "https://aws.amazon.com/step-functions/",
         "icon": "🔄",
-        "news_keywords": ["Step Functions"],
+        "news_keywords": ["Step Functions", "state machine"],
         "blog_feeds": ["https://aws.amazon.com/blogs/compute/feed/"],
         "static_limits": [
             {"name": "Max execution time (Standard)", "value": "1 year"},
@@ -365,7 +365,7 @@ SERVICES = [
         "pricingUrl": "https://aws.amazon.com/bedrock/pricing/",
         "url": "https://aws.amazon.com/bedrock/",
         "icon": "🧠",
-        "news_keywords": ["Bedrock"],
+        "news_keywords": ["Bedrock", "generative AI", "foundation model"],
         "blog_feeds": ["https://aws.amazon.com/blogs/machine-learning/feed/"],
         "static_limits": [
             {"name": "Max input tokens", "value": "Model dependent"},
@@ -407,7 +407,7 @@ SERVICES = [
         "pricingUrl": "https://aws.amazon.com/eks/pricing/",
         "url": "https://aws.amazon.com/eks/",
         "icon": "☸️",
-        "news_keywords": ["EKS", "Elastic Kubernetes"],
+        "news_keywords": ["EKS", "Elastic Kubernetes", "Kubernetes"],
         "blog_feeds": ["https://aws.amazon.com/blogs/containers/feed/"],
         "static_limits": [
             {"name": "Nodes per cluster", "value": "5,000"},
@@ -561,7 +561,7 @@ SERVICES = [
         "pricingUrl": "https://aws.amazon.com/lambda/pricing/",
         "url": "https://aws.amazon.com/lambda/edge/",
         "icon": "🌐",
-        "news_keywords": ["Lambda@Edge"],
+        "news_keywords": ["Lambda@Edge", "edge function"],
         "blog_feeds": ["https://aws.amazon.com/blogs/networking-and-content-delivery/feed/"],
         "static_limits": [
             {"name": "Max function size (viewer)", "value": "1 MB"},
