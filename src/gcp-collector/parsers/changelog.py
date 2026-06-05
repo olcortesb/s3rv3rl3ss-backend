@@ -44,7 +44,7 @@ def _diff_news(old_news, new_news):
     changes = []
     for n in new_news:
         if n["title"] not in old_titles:
-            entry = {"type": "new_news", "detail": n["title"]}
+            entry = {"type": "new_news", "detail": n["title"], "date": n.get("date", "")}
             if n.get("url"):
                 entry["url"] = n["url"]
             changes.append(entry)
@@ -68,7 +68,8 @@ def build_changelog(old_services, new_services, existing_changelog=None, max_day
         changes.extend(_diff_news(old.get("news", []), svc.get("news", [])))
 
         for c in changes:
-            new_changes.append({"date": today, "service": svc["id"], **c})
+            change_date = c.pop("date", None) or today
+            new_changes.append({"date": change_date, "service": svc["id"], **c})
 
     # Merge with existing changelog
     changelog = existing_changelog or []
