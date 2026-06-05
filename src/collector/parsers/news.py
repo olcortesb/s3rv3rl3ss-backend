@@ -15,15 +15,18 @@ def _parse_rss_date(pub):
         return ""
 
 
-def _fetch_feed(url, keywords, limit):
+def _fetch_feed(url, keywords, limit, search_description=False):
     items = []
     try:
         with urlopen(url, timeout=10) as resp:
             root = ET.parse(resp).getroot()
         for item in root.iter('item'):
             title = item.findtext('title', '')
-            description = item.findtext('description', '')
-            text = (title + " " + description).lower()
+            if search_description:
+                description = item.findtext('description', '')
+                text = (title + " " + description).lower()
+            else:
+                text = title.lower()
             if keywords and not any(kw.lower() in text for kw in keywords):
                 continue
             pub = item.findtext('pubDate', '')
@@ -40,16 +43,16 @@ def _fetch_feed(url, keywords, limit):
 
 
 def fetch_news(keywords, blog_feeds=None):
-    # 1. What's New feed (filtered by keywords)
-    news = _fetch_feed(WHATS_NEW_FEED, keywords, NEWS_LIMIT)
+    # 1. What's New feed (filtered by keywords in TITLE only)
+    news = _fetch_feed(WHATS_NEW_FEED, keywords, NEWS_LIMIT, search_description=False)
 
-    # 2. Blog feeds (filtered by keywords)
+    # 2. Blog feeds (filtered by keywords in title + description)
     if blog_feeds:
         for feed_url in blog_feeds:
             remaining = NEWS_LIMIT - len(news)
             if remaining <= 0:
                 break
-            blog_items = _fetch_feed(feed_url, keywords, remaining)
+            blog_items = _fetch_feed(feed_url, keywords, remaining, search_description=True)
             news.extend(blog_items)
 
     # Deduplicate by title (normalized) and sort by date desc
