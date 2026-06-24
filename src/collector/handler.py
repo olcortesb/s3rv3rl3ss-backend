@@ -6,7 +6,7 @@ import boto3
 
 from services import SERVICES
 from parsers.quotas import list_quotas
-from parsers.news import fetch_news
+from parsers.news import fetch_news, NEWS_LIMIT
 from parsers.runtimes import fetch_runtimes
 from parsers.docs_limits import fetch_docs_limits
 from parsers.changelog import build_changelog
@@ -119,6 +119,22 @@ def lambda_handler(event, context):
     old_services = old_data.get("services", []) if old_data else []
     existing = old_changelog.get("changes", []) if old_changelog else []
 
+    # Merge news: combine fresh RSS with previously stored news
+    old_news_map = {s["id"]: s.get("news", []) for s in old_services}
+    for svc in services:
+        old_news = old_news_map.get(svc["id"], [])
+        fresh_news = svc.get("news", [])
+        if old_news or fresh_news:
+            seen = set()
+            merged = []
+            for n in fresh_news + old_news:
+                key = n.get("title", "").strip()
+                if key not in seen:
+                    seen.add(key)
+                    merged.append(n)
+            merged.sort(key=lambda x: x.get("date", ""), reverse=True)
+            svc["news"] = merged[:NEWS_LIMIT]
+
     changelog = build_changelog(old_services, services, existing)
     new_changes = len(changelog) - len(existing)
     print(f"[changelog] {new_changes} new changes detected")
@@ -134,6 +150,7 @@ def lambda_handler(event, context):
     # Write services JSON
     output = {
         "lastUpdated": date.today().isoformat(),
+        "region": os.environ.get('AWS_REGION', 'us-east-1'),
         "services": services,
     }
 
