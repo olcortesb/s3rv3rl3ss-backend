@@ -726,4 +726,32 @@ SERVICES = [
     },
 ]
 
+    {
+        "id": "rekognition",
+        "name": "Amazon Rekognition",
+        "category": "AI/ML",
+        "service_code": "rekognition",
+        "pricing_code": "AmazonRekognition",
+        "description": "Amazon Rekognition is a fully managed computer vision service that makes it easy to add image and video analysis to your applications using deep learning.",
+        "useCases": ["Face detection", "Object recognition", "Content moderation", "Text in images"],
+        "pricing": "Pay per image or minute of video analyzed",
+        "pricingUrl": "https://aws.amazon.com/rekognition/pricing/",
+        "calculatorUrl": "https://calculator.aws/createCalculator/Rekognition",
+        "url": "https://aws.amazon.com/rekognition/",
+        "icon": "👁️",
+        "news_keywords": ["Rekognition"],
+        "blog_feeds": ["https://aws.amazon.com/blogs/machine-learning/feed/"],
+        "static_limits": [
+            {"name": "Max image size (S3)", "value": "15 MB"},
+            {"name": "Max image size (bytes)", "value": "5 MB"},
+            {"name": "Max image dimensions", "value": "10,000 x 10,000 px"},
+            {"name": "Max faces per image", "value": "100"},
+            {"name": "Max faces per collection", "value": "20,000,000"},
+            {"name": "Max video file size", "value": "10 GB"},
+            {"name": "Max video duration", "value": "6 hours"},
+            {"name": "Max concurrent video jobs", "value": "20 (soft limit)"},
+        ],
+    },
+]
+
 DISABLED_SERVICES = []
