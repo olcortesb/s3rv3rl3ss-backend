@@ -724,8 +724,6 @@ SERVICES = [
             {"name": "Max custom domains per app", "value": "5"},
         ],
     },
-]
-
     {
         "id": "rekognition",
         "name": "Amazon Rekognition",

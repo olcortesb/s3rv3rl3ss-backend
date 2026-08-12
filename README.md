@@ -1,15 +1,16 @@
 # s3rv3rl3ss-backend
 
-Multi-cloud data pipeline that collects serverless service quotas, limits, pricing and news from AWS, GCP and Azure — and auto-commits the results to the [s3rv3rl3ss](https://github.com/olcortesb/s3rv3rl3ss) frontend repo via GitHub API.
+Multi-cloud data pipeline that collects serverless service quotas, limits, pricing and news from AWS, GCP, Azure and STACKIT — and auto-commits the results to the [s3rv3rl3ss](https://github.com/olcortesb/s3rv3rl3ss) frontend repo via GitHub API.
 
 ## How it works
 
 ![Architecture](image.png)
 
-1. **EventBridge Schedules** trigger 8 Lambda functions daily (staggered):
-   - `06:00` → AWS Collector (22 services)
+1. **EventBridge Schedules** trigger 9 Lambda functions daily (staggered):
+   - `06:00` → AWS Collector (32 services)
    - `06:15` → GCP Collector (18 services)
    - `06:30` → Azure Collector (17 services)
+   - `06:35` → STACKIT Collector (23 services)
    - `06:45` → Comparisons Generator (cross-provider)
    - `06:50` → Changelog Generator (from DynamoDB)
    - `06:55` → Metrics Generator (CloudWatch + DynamoDB)
@@ -38,12 +39,18 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 
 ### Azure Collector
 - **Pricing**: [Azure Retail Prices API](https://prices.azure.com/api/retail/prices) (public, no auth)
-- **News**: [Azure Blog RSS](https://azure.microsoft.com/en-us/blog/feed/) filtered by keywords
+- **News**: [Azure Blog RSS](https://azure.microsoft.com/en-us/blog/feed/), [Azure Weekly RSS](https://azureweekly.info/rss.xml), [CosmosDB DevBlog](https://devblogs.microsoft.com/cosmosdb/feed/), [Azure SQL DevBlog](https://devblogs.microsoft.com/azure-sql/feed/) filtered by keywords
+- **Limits**: Static data with docs references
+- **Runtimes**: Static data
+
+### STACKIT Collector
+- **Pricing**: [STACKIT PIM API](https://pim.api.stackit.cloud/v1/skus) (public, no auth, prices in €)
+- **News**: [STACKIT Release Notes RSS](https://docs.stackit.cloud/release-notes/feed.xml)
 - **Limits**: Static data with docs references
 - **Runtimes**: Static data
 
 ### Comparisons Generator
-- Reads all 3 provider JSONs from S3
+- Reads all 4 provider JSONs from S3
 - Generates `comparisons.json` with verified field mappings
 - 13 categories (Functions, Containers, Kubernetes, NoSQL, etc.)
 
@@ -86,6 +93,7 @@ Collectors write current state + detected changes on every run. Changelog is gen
 - **AWS**: Edit `src/collector/services.py`
 - **GCP**: Edit `src/gcp-collector/services.py`
 - **Azure**: Edit `src/azure-collector/services.py`
+- **STACKIT**: Edit `src/stackit-collector/services.py`
 
 Then build and deploy.
 
@@ -154,7 +162,7 @@ python3 scripts/load_dynamo.py --region us-east-1
 
 | Service | Cost |
 |---------|------|
-| Lambda (8 functions, arm64) | $0.00 (free tier) |
+| Lambda (9 functions, arm64) | $0.00 (free tier) |
 | DynamoDB (on-demand) | $0.00 (free tier) |
 | S3 (versioned) | $0.00 (free tier) |
 | EventBridge | $0.00 (free tier) |

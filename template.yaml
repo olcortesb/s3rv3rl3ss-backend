@@ -126,6 +126,34 @@ Resources:
             Description: Triggers daily Azure data collection (30 min after AWS)
             Enabled: true
 
+  StackitCollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/stackit-collector/
+      Description: Collects STACKIT cloud data, pricing and news
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          S3_KEY: data/services-stackit.json
+          STATISTICS_KEY: data/statistics-stackit.json
+          CHANGELOG_KEY: data/changelog-stackit.json
+          TABLE_NAME: !Ref DataTable
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DataTable
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(35 6 * * ? *)
+            Description: Triggers daily STACKIT data collection (35 min after AWS)
+            Enabled: true
+
   CommitterFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -436,6 +464,8 @@ Outputs:
     Value: !GetAtt CollectorFunction.Arn
   GcpCollectorFunctionArn:
     Value: !GetAtt GcpCollectorFunction.Arn
+  StackitCollectorFunctionArn:
+    Value: !GetAtt StackitCollectorFunction.Arn
   AzureCollectorFunctionArn:
     Value: !GetAtt AzureCollectorFunction.Arn
   CommitterFunctionArn:

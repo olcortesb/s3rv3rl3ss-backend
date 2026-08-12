@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timezone
 
 import boto3
 
@@ -105,7 +106,7 @@ def build_comparisons(providers_data):
             "pricing": verified_pricing,
         })
 
-    return {"categories": output_categories}, warnings
+    return {"categories": output_categories, "lastUpdated": datetime.now(timezone.utc).strftime("%Y-%m-%d")}, warnings
 
 
 def lambda_handler(event, context):
