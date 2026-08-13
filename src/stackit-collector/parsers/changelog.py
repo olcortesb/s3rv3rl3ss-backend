@@ -51,7 +51,7 @@ def _diff_news(old_news, new_news):
     return changes
 
 
-def build_changelog(old_services, new_services, existing_changelog=None, max_days=90):
+def build_changelog(old_services, new_services, existing_changelog=None, max_days=180):
     today = date.today().isoformat()
     old_map = {s["id"]: s for s in old_services}
 

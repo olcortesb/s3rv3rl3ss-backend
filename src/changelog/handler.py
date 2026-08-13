@@ -14,7 +14,7 @@ dynamodb = boto3.resource("dynamodb")
 
 BUCKET = os.environ["BUCKET_NAME"]
 TABLE_NAME = os.environ["TABLE_NAME"]
-MAX_DAYS = 90
+MAX_DAYS = 180
 
 PROVIDERS = ["aws", "gcp", "azure"]
 CHANGELOG_KEYS = {

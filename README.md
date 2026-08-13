@@ -57,7 +57,7 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 ### Changelog Generator
 - Reads `CHANGE` items from DynamoDB (persisted by collectors)
 - Generates `changelog-{provider}.json` with URLs for news items
-- 90-day rolling window
+- 180-day rolling window
 
 ### Tools Collector
 - **Versions**: [GitHub Releases API](https://docs.github.com/en/rest/releases/releases)
