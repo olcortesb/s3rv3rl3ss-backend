@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.0.0...v1.0.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* remove hardcoded account ID from IAM policy ([b2657ba](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/b2657ba98031b84aca44432a339772631dc6f5a0))
+
 # 1.0.0 (2026-08-14)
 
 
