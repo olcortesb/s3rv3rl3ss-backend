@@ -354,8 +354,8 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource:
-                  - "arn:aws:secretsmanager:us-east-1:536395113578:secret:s3rv3rl3ss/dockerhub-*"
-                  - "arn:aws:secretsmanager:us-east-1:536395113578:secret:s3rv3rl3ss/localstack-*"
+                  - !Sub "arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:s3rv3rl3ss/dockerhub-*"
+                  - !Sub "arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:s3rv3rl3ss/localstack-*"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
