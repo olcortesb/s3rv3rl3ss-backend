@@ -225,3 +225,5 @@ samconfig.local.toml
 
 # Exploration scripts
 scripts/explore_*.py
+REINVENT.md
+*.csv
