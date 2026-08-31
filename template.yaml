@@ -43,6 +43,7 @@ Resources:
           BUCKET_NAME: !Ref DataBucket
           S3_KEY: data/services-aws.json
           TABLE_NAME: !Ref DataTable
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
@@ -56,6 +57,7 @@ Resources:
                 - servicequotas:ListAWSDefaultServiceQuotas
                 - pricing:GetProducts
                 - pricing:DescribeServices
+                - cloudfront:CreateInvalidation
               Resource: '*'
       Events:
         ScheduleEvent:

@@ -16,11 +16,13 @@ from parsers.statistics import build_statistics
 from parsers.dynamo import write_changes, update_service_data
 
 s3 = boto3.client('s3')
+cf = boto3.client('cloudfront')
 
 BUCKET = os.environ['BUCKET_NAME']
 S3_KEY = os.environ['S3_KEY']
 CHANGELOG_KEY = os.environ.get('CHANGELOG_KEY', 'data/changelog.json')
 STATISTICS_KEY = os.environ.get('STATISTICS_KEY', 'data/statistics.json')
+CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
 
 
 def _read_s3_json(key):
@@ -185,5 +187,19 @@ def lambda_handler(event, context):
         Body=json.dumps(stats, indent=2, ensure_ascii=False).encode('utf-8'),
         ContentType='application/json',
     )
+
+    # Invalidate CloudFront cache
+    if CLOUDFRONT_DISTRIBUTION_ID:
+        try:
+            cf.create_invalidation(
+                DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
+                InvalidationBatch={
+                    'Paths': {'Quantity': 3, 'Items': ['/data/services-aws.json', '/data/changelog.json', '/data/statistics.json']},
+                    'CallerReference': date.today().isoformat(),
+                }
+            )
+            print(f"[cloudfront] invalidation created")
+        except Exception as e:
+            print(f"[cloudfront] invalidation failed: {e}")
 
     return {"statusCode": 200, "body": f"Wrote {len(services)} services, {new_changes} new changes"}
