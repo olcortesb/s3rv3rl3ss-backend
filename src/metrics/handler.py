@@ -13,11 +13,27 @@ s3 = boto3.client("s3")
 cw = boto3.client("cloudwatch")
 dynamodb = boto3.client("dynamodb")
 lambda_client = boto3.client("lambda")
+cf = boto3.client('cloudfront')
 
 BUCKET = os.environ["BUCKET_NAME"]
 TABLE_NAME = os.environ["TABLE_NAME"]
 S3_KEY = os.environ.get("S3_KEY", "data/metrics.json")
 STACK_PREFIX = "s3rv3rl3ss-backend"
+EXCLUDED_FUNCTIONS = {"CommitterFunction"}
+CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
+
+
+def _invalidate(paths):
+    if not CLOUDFRONT_DISTRIBUTION_ID:
+        return
+    try:
+        cf.create_invalidation(
+            DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
+            InvalidationBatch={'Paths': {'Quantity': len(paths), 'Items': paths}, 'CallerReference': '-'.join(paths)}
+        )
+        print(f"[cloudfront] invalidation created")
+    except Exception as e:
+        print(f"[cloudfront] invalidation failed: {e}")
 
 # Lambda pricing (arm64, us-east-1)
 PRICE_PER_GB_SECOND = 0.0000133334
@@ -34,7 +50,9 @@ def _get_lambda_metrics(function_prefix, start, end, period):
     for page in paginator.paginate():
         for fn in page["Functions"]:
             if STACK_PREFIX in fn["FunctionName"]:
-                function_names.append(fn["FunctionName"])
+                short_name = fn["FunctionName"].split("-")[-2] if "-" in fn["FunctionName"] else fn["FunctionName"]
+                if short_name not in EXCLUDED_FUNCTIONS:
+                    function_names.append(fn["FunctionName"])
 
     for fn_name in function_names:
         short_name = fn_name.split("-")[-2] if "-" in fn_name else fn_name
@@ -118,8 +136,8 @@ def _calculate_cost(metrics_today, metrics_month):
     lambda_free_tier = 400_000
     lambda_effective = max(0, gb_seconds_month - lambda_free_tier) * PRICE_PER_GB_SECOND
 
-    # Secrets Manager: $0.40/secret/month × 3 secrets
-    secrets_cost = 0.40 * 3
+    # Secrets Manager: $0.40/secret/month × 2 secrets (dockerhub + localstack)
+    secrets_cost = 0.40 * 2
 
     # CodeBuild cost: BUILD_GENERAL1_MEDIUM = $0.005/min, ~2 min/day
     codebuild_cost = 0.005 * 2 * 30  # ~$0.30/month
@@ -136,7 +154,7 @@ def _calculate_cost(metrics_today, metrics_month):
             "eventbridge": "$0.00 (free tier)",
             "codebuild": f"~${codebuild_cost:.2f}",
         },
-        "note": "Secrets Manager (3 secrets) + CodeBuild outside free tier",
+        "note": "Secrets Manager (2 secrets) + CodeBuild outside free tier",
     }
 
 
@@ -199,4 +217,5 @@ def lambda_handler(event, context):
     print(f"[metrics] Today: {metrics_today['invocations']} invocations, {metrics_today['errors']} errors")
     print(f"[metrics] Month: {metrics_month['invocations']} invocations")
 
+    _invalidate(['/data/metrics.json'])
     return {"statusCode": 200, "body": f"Generated metrics: {metrics_today['invocations']} invocations today"}

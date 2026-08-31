@@ -11,10 +11,25 @@ import boto3
 
 s3 = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
+cf = boto3.client('cloudfront')
 
 BUCKET = os.environ["BUCKET_NAME"]
 TABLE_NAME = os.environ["TABLE_NAME"]
 MAX_DAYS = 180
+CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
+
+
+def _invalidate(paths):
+    if not CLOUDFRONT_DISTRIBUTION_ID:
+        return
+    try:
+        cf.create_invalidation(
+            DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
+            InvalidationBatch={'Paths': {'Quantity': len(paths), 'Items': paths}, 'CallerReference': '-'.join(paths)}
+        )
+        print(f"[cloudfront] invalidation created")
+    except Exception as e:
+        print(f"[cloudfront] invalidation failed: {e}")
 
 PROVIDERS = ["aws", "gcp", "azure"]
 CHANGELOG_KEYS = {
@@ -88,4 +103,5 @@ def lambda_handler(event, context):
         results[provider] = {"total": len(changelog), "with_url": with_url}
         print(f"[{provider}] {len(changelog)} changes ({with_url} with URL)")
 
+    _invalidate(['/data/changelog.json', '/data/changelog-gcp.json', '/data/changelog-azure.json'])
     return {"statusCode": 200, "body": json.dumps(results)}

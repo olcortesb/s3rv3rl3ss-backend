@@ -12,11 +12,26 @@ from parsers.changelog import build_changelog
 from parsers.dynamo import write_changes, update_service_data
 
 s3 = boto3.client('s3')
+cf = boto3.client('cloudfront')
 
 BUCKET = os.environ['BUCKET_NAME']
 S3_KEY = os.environ.get('S3_KEY', 'data/services-stackit.json')
 STATISTICS_KEY = os.environ.get('STATISTICS_KEY', 'data/statistics-stackit.json')
 CHANGELOG_KEY = os.environ.get('CHANGELOG_KEY', 'data/changelog-stackit.json')
+CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
+
+
+def _invalidate(paths):
+    if not CLOUDFRONT_DISTRIBUTION_ID:
+        return
+    try:
+        cf.create_invalidation(
+            DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
+            InvalidationBatch={'Paths': {'Quantity': len(paths), 'Items': paths}, 'CallerReference': '-'.join(paths)}
+        )
+        print(f"[cloudfront] invalidation created")
+    except Exception as e:
+        print(f"[cloudfront] invalidation failed: {e}")
 
 
 def build_service(svc):
@@ -112,4 +127,5 @@ def lambda_handler(event, context):
         ContentType='application/json',
     )
 
+    _invalidate(['/data/services-stackit.json', '/data/changelog-stackit.json', '/data/statistics-stackit.json'])
     return {"statusCode": 200, "body": f"Wrote {len(services)} STACKIT services"}

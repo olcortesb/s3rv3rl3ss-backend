@@ -81,11 +81,17 @@ Resources:
           S3_KEY: data/services-gcp.json
           STATISTICS_KEY: data/statistics-gcp.json
           TABLE_NAME: !Ref DataTable
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref DataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: '*'
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -108,11 +114,17 @@ Resources:
           S3_KEY: data/services-azure.json
           STATISTICS_KEY: data/statistics-azure.json
           TABLE_NAME: !Ref DataTable
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref DataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: '*'
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -136,11 +148,17 @@ Resources:
           STATISTICS_KEY: data/statistics-stackit.json
           CHANGELOG_KEY: data/changelog-stackit.json
           TABLE_NAME: !Ref DataTable
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref DataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: '*'
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -163,9 +181,15 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref DataBucket
           S3_KEY: data/comparisons.json
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: '*'
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -332,11 +356,17 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref DataBucket
           TABLE_NAME: !Ref DataTable
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
         - DynamoDBReadPolicy:
             TableName: !Ref DataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: '*'
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -360,6 +390,7 @@ Resources:
           BUCKET_NAME: !Ref DataBucket
           TABLE_NAME: !Ref DataTable
           S3_KEY: data/metrics.json
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
@@ -370,6 +401,7 @@ Resources:
               Action:
                 - cloudwatch:GetMetricStatistics
                 - lambda:ListFunctions
+                - cloudfront:CreateInvalidation
               Resource: '*'
       Events:
         ScheduleEvent:

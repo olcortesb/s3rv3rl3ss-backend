@@ -7,9 +7,24 @@ import boto3
 from categories import CATEGORIES
 
 s3 = boto3.client("s3")
+cf = boto3.client('cloudfront')
 
 BUCKET = os.environ["BUCKET_NAME"]
 S3_KEY = os.environ.get("S3_KEY", "data/comparisons.json")
+CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
+
+
+def _invalidate(paths):
+    if not CLOUDFRONT_DISTRIBUTION_ID:
+        return
+    try:
+        cf.create_invalidation(
+            DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
+            InvalidationBatch={'Paths': {'Quantity': len(paths), 'Items': paths}, 'CallerReference': '-'.join(paths)}
+        )
+        print(f"[cloudfront] invalidation created")
+    except Exception as e:
+        print(f"[cloudfront] invalidation failed: {e}")
 
 
 def _read_s3_json(key):
@@ -127,4 +142,5 @@ def lambda_handler(event, context):
         ContentType="application/json",
     )
 
+    _invalidate(['/data/comparisons.json'])
     return {"statusCode": 200, "body": f"Generated comparisons with {len(result['categories'])} categories"}
