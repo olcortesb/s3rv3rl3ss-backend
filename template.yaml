@@ -7,13 +7,6 @@ Parameters:
     Type: String
     Default: cron(0 6 * * ? *)
     Description: EventBridge schedule for data collection (daily at 6:00 UTC)
-  GitRepoUrl:
-    Type: String
-    Description: HTTPS Git repo URL (e.g. https://github.com/user/s3rv3rl3ss.git)
-  GitSecretArn:
-    Type: String
-    Description: Secrets Manager ARN containing git credentials (token)
-
 Globals:
   Function:
     Runtime: python3.12
@@ -153,46 +146,6 @@ Resources:
             Schedule: cron(35 6 * * ? *)
             Description: Triggers daily STACKIT data collection (35 min after AWS)
             Enabled: true
-
-  CommitterFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.lambda_handler
-      CodeUri: src/committer/
-      Description: Commits updated JSON to GitHub repo via API when S3 object is created
-      Architectures:
-        - arm64
-      Environment:
-        Variables:
-          BUCKET_NAME: !Ref DataBucket
-          GIT_SECRET_ARN: !Ref GitSecretArn
-          GITHUB_REPO: !Select [0, !Split [".git", !Select [1, !Split ["github.com/", !Ref GitRepoUrl]]]]
-          GITHUB_BRANCH: main
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref DataBucket
-        - Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue
-              Resource: !Ref GitSecretArn
-      Events:
-        S3Event:
-          Type: EventBridgeRule
-          Properties:
-            Pattern:
-              source:
-                - aws.s3
-              detail-type:
-                - Object Created
-              detail:
-                bucket:
-                  name:
-                    - !Ref DataBucket
-                object:
-                  key:
-                    - prefix: data/
-                    - suffix: .json
 
   ComparisonsFunction:
     Type: AWS::Serverless::Function
@@ -424,6 +377,64 @@ Resources:
             Description: Generates project metrics daily
             Enabled: true
 
+  DataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DataBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: 's3:GetObject'
+            Resource: !Sub '${DataBucket.Arn}/data/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${DataDistribution}'
+
+  DataOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub 's3rv3rl3ss-oac-${AWS::AccountId}'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  DataDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: s3rv3rl3ss data CDN
+        DefaultCacheBehavior:
+          TargetOriginId: DataBucketOrigin
+          ViewerProtocolPolicy: https-only
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
+          ResponseHeadersPolicyId: !Ref DataResponseHeadersPolicy
+        Origins:
+          - Id: DataBucketOrigin
+            DomainName: !GetAtt DataBucket.RegionalDomainName
+            OriginAccessControlId: !Ref DataOriginAccessControl
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+
+  DataResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub 's3rv3rl3ss-cors-${AWS::AccountId}'
+        CorsConfig:
+          AccessControlAllowCredentials: false
+          AccessControlAllowHeaders:
+            Items: ['*']
+          AccessControlAllowMethods:
+            Items: [GET, HEAD]
+          AccessControlAllowOrigins:
+            Items:
+              - https://s3rv3rl3ss.olcortesb.com
+          OriginOverride: true
+
   DataTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -460,6 +471,11 @@ Resources:
 Outputs:
   DataBucketName:
     Value: !Ref DataBucket
+  DataDistributionUrl:
+    Value: !Sub 'https://${DataDistribution.DomainName}'
+    Description: CloudFront URL for frontend fetch() — use as VITE_CLOUDFRONT_URL
+  DataDistributionId:
+    Value: !Ref DataDistribution
   CollectorFunctionArn:
     Value: !GetAtt CollectorFunction.Arn
   GcpCollectorFunctionArn:
@@ -468,8 +484,6 @@ Outputs:
     Value: !GetAtt StackitCollectorFunction.Arn
   AzureCollectorFunctionArn:
     Value: !GetAtt AzureCollectorFunction.Arn
-  CommitterFunctionArn:
-    Value: !GetAtt CommitterFunction.Arn
   ComparisonsFunctionArn:
     Value: !GetAtt ComparisonsFunction.Arn
   ToolsCollectorFunctionArn:
