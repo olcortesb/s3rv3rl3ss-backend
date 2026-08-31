@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.0.1...v1.1.0) (2026-08-31)
+
+
+### Features
+
+* CloudFront auto-invalidation + AWS Organizations + Control Tower ([7fb65fe](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/7fb65fe8731af649fa2867e2d014a112d1942c41))
+
 ## [1.0.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.0.0...v1.0.1) (2026-08-14)
 
 
