@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import date
+from datetime import date, datetime, timezone
 
 import boto3
 
@@ -27,7 +27,7 @@ def _invalidate(paths):
     try:
         cf.create_invalidation(
             DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
-            InvalidationBatch={'Paths': {'Quantity': len(paths), 'Items': paths}, 'CallerReference': '-'.join(paths)}
+            InvalidationBatch={'Paths': {'Quantity': len(paths), 'Items': paths}, 'CallerReference': datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}
         )
         print(f"[cloudfront] invalidation created")
     except Exception as e:

@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import date
+from datetime import date, datetime, timezone
 
 import boto3
 
@@ -195,7 +195,7 @@ def lambda_handler(event, context):
                 DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
                 InvalidationBatch={
                     'Paths': {'Quantity': 3, 'Items': ['/data/services-aws.json', '/data/changelog.json', '/data/statistics.json']},
-                    'CallerReference': date.today().isoformat(),
+                    'CallerReference': datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ'),
                 }
             )
             print(f"[cloudfront] invalidation created")
