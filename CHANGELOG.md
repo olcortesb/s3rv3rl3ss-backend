@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.1.0...v1.1.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* CloudFront auto-invalidation for all collectors + exclude CommitterFunction from metrics ([a1a9a27](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/a1a9a27c92af6b760e142fae3ac6043d8a020124))
+
 # [1.1.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.0.1...v1.1.0) (2026-08-31)
 
 
