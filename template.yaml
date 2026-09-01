@@ -44,6 +44,7 @@ Resources:
           S3_KEY: data/services-aws.json
           TABLE_NAME: !Ref DataTable
           CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
+          REINVENT_FUNCTION_NAME: !Ref ReinventFunction
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
@@ -58,6 +59,7 @@ Resources:
                 - pricing:GetProducts
                 - pricing:DescribeServices
                 - cloudfront:CreateInvalidation
+                - lambda:InvokeFunction
               Resource: '*'
       Events:
         ScheduleEvent:

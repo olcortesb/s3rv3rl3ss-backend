@@ -23,6 +23,7 @@ S3_KEY = os.environ['S3_KEY']
 CHANGELOG_KEY = os.environ.get('CHANGELOG_KEY', 'data/changelog.json')
 STATISTICS_KEY = os.environ.get('STATISTICS_KEY', 'data/statistics.json')
 CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
+REINVENT_FUNCTION_NAME = os.environ.get('REINVENT_FUNCTION_NAME', '')
 
 
 def _read_s3_json(key):
@@ -202,4 +203,19 @@ def lambda_handler(event, context):
         except Exception as e:
             print(f"[cloudfront] invalidation failed: {e}")
 
+    # Invoke ReinventFunction daily with force=true
+    _invoke_reinvent()
+
     return {"statusCode": 200, "body": f"Wrote {len(services)} services, {new_changes} new changes"}
+    if not REINVENT_FUNCTION_NAME:
+        return
+    try:
+        lambda_client = boto3.client('lambda')
+        lambda_client.invoke(
+            FunctionName=REINVENT_FUNCTION_NAME,
+            InvocationType='Event',  # async
+            Payload=json.dumps({"force": True}).encode(),
+        )
+        print(f"[reinvent] invoked async with force=true")
+    except Exception as e:
+        print(f"[reinvent] invoke failed: {e}")
