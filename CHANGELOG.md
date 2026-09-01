@@ -1,3 +1,11 @@
+# [1.2.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.1.1...v1.2.0) (2026-09-01)
+
+
+### Features
+
+* add ReinventFunction with date-based schedule and CloudFront invalidation ([81a8306](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/81a8306936f067187317ec17c3d990a096bef9df))
+* invoke ReinventFunction daily from CollectorFunction with force=true ([b730eff](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/b730eff9117a9e83f7fb1c512283077b5b0ef72b))
+
 ## [1.1.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.1.0...v1.1.1) (2026-08-31)
 
 
