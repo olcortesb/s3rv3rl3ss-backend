@@ -228,3 +228,4 @@ scripts/explore_*.py
 REINVENT.md
 *.csv
 burbujIA.md
+scripts/deploy.sh

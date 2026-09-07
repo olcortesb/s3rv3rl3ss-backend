@@ -17,6 +17,7 @@ from parsers.dynamo import write_changes, update_service_data
 
 s3 = boto3.client('s3')
 cf = boto3.client('cloudfront')
+lambda_client = boto3.client('lambda')
 
 BUCKET = os.environ['BUCKET_NAME']
 S3_KEY = os.environ['S3_KEY']
@@ -204,18 +205,15 @@ def lambda_handler(event, context):
             print(f"[cloudfront] invalidation failed: {e}")
 
     # Invoke ReinventFunction daily with force=true
-    _invoke_reinvent()
+    if REINVENT_FUNCTION_NAME:
+        try:
+            lambda_client.invoke(
+                FunctionName=REINVENT_FUNCTION_NAME,
+                InvocationType='Event',  # async
+                Payload=json.dumps({"force": True}).encode(),
+            )
+            print(f"[reinvent] invoked async with force=true")
+        except Exception as e:
+            print(f"[reinvent] invoke failed: {e}")
 
     return {"statusCode": 200, "body": f"Wrote {len(services)} services, {new_changes} new changes"}
-    if not REINVENT_FUNCTION_NAME:
-        return
-    try:
-        lambda_client = boto3.client('lambda')
-        lambda_client.invoke(
-            FunctionName=REINVENT_FUNCTION_NAME,
-            InvocationType='Event',  # async
-            Payload=json.dumps({"force": True}).encode(),
-        )
-        print(f"[reinvent] invoked async with force=true")
-    except Exception as e:
-        print(f"[reinvent] invoke failed: {e}")

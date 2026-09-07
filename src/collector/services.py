@@ -166,7 +166,7 @@ SERVICES = [
             {"sdk_client": "appsync", "shape_name": "DataSourceType", "label": "Data Sources", "description": "Backends that AppSync can connect to as resolvers for your GraphQL API"},
         ],
         "blog_feeds": ["https://aws.amazon.com/blogs/mobile/feed/"],
-        "docs_limits_url": "https://docs.aws.amazon.com/appsync/latest/devguide/quotas.md",
+        "docs_limits_url": "https://docs.aws.amazon.com/general/latest/gr/appsync.html",
         "static_limits": [
             {"name": "Request payload", "value": "1 MB"},
             {"name": "Subscription payload", "value": "240 KB"},
@@ -446,7 +446,7 @@ SERVICES = [
         "id": "opensearch-serverless",
         "name": "Amazon OpenSearch Serverless",
         "category": "Analytics",
-        "service_code": "opensearchserverless",
+        "service_code": "aoss",
         "pricing_code": "AmazonOpenSearchService",
         "description": "Amazon OpenSearch Serverless is a serverless option for Amazon OpenSearch Service that makes it simple to run search and analytics workloads without managing clusters.",
         "useCases": ["Log analytics", "Full-text search", "Application monitoring", "Security analytics"],

@@ -443,7 +443,7 @@ Resources:
         ScheduleEvent:
           Type: Schedule
           Properties:
-            Schedule: cron(0 */2 * * ? *)
+            Schedule: cron(5 7 * * ? *)
             Description: Every 2h — handler skips based on date (active Nov 1 - Dec 7)
             Enabled: true
 
