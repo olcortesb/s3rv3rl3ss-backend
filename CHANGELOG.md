@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.0...v1.2.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* esolve 3 runtime errors in CollectorFunction ([77c999d](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/77c999dd7b19728c1959f02a0737a02e39c9b6c0))
+
 # [1.2.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.1.1...v1.2.0) (2026-09-01)
 
 
