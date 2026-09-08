@@ -225,6 +225,7 @@ samconfig.local.toml
 
 # Exploration scripts
 scripts/explore_*.py
+scripts/check.sh
 REINVENT.md
 *.csv
 burbujIA.md

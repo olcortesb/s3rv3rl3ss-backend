@@ -61,15 +61,15 @@ def build_comparisons(providers_data):
     for cat in CATEGORIES:
         # Get services for this category
         services = {}
-        for provider in ["aws", "gcp", "azure"]:
+        for provider in ["aws", "gcp", "azure", "stackit"]:
             sid = cat["services"].get(provider)
-            services[provider] = _get_service(providers_data[provider], sid)
+            services[provider] = _get_service(providers_data[provider], sid) if providers_data.get(provider) else None
 
         # Verify limits
         verified_limits = []
         for row in cat.get("limits", []):
             verified_row = {"label": row["label"]}
-            for provider in ["aws", "gcp", "azure"]:
+            for provider in ["aws", "gcp", "azure", "stackit"]:
                 field = row.get(provider)
                 static_key = f"{provider}_static"
                 if field:
@@ -92,7 +92,7 @@ def build_comparisons(providers_data):
         verified_pricing = []
         for row in cat.get("pricing", []):
             verified_row = {"label": row["label"]}
-            for provider in ["aws", "gcp", "azure"]:
+            for provider in ["aws", "gcp", "azure", "stackit"]:
                 field = row.get(provider)
                 static_key = f"{provider}_static"
                 if field:
@@ -130,6 +130,7 @@ def lambda_handler(event, context):
         "aws": _read_s3_json("data/services-aws.json"),
         "gcp": _read_s3_json("data/services-gcp.json"),
         "azure": _read_s3_json("data/services-azure.json"),
+        "stackit": _read_s3_json("data/services-stackit.json"),
     }
 
     result, warnings = build_comparisons(providers_data)
