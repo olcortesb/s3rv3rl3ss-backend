@@ -42,7 +42,7 @@ PRICE_PER_REQUEST = 0.20 / 1_000_000
 
 def _get_lambda_metrics(function_prefix, start, end, period):
     """Get invocations, duration, and errors for all functions."""
-    metrics = {"invocations": 0, "duration_ms": 0, "errors": 0, "functions": {}}
+    metrics = {"invocations": 0, "duration_ms": 0, "errors": 0, "functions": {}, "total_count": 0}
 
     # List actual function names
     paginator = lambda_client.get_paginator("list_functions")
@@ -53,6 +53,9 @@ def _get_lambda_metrics(function_prefix, start, end, period):
                 short_name = fn["FunctionName"].split("-")[-2] if "-" in fn["FunctionName"] else fn["FunctionName"]
                 if short_name not in EXCLUDED_FUNCTIONS:
                     function_names.append(fn["FunctionName"])
+
+    total_function_count = len(function_names)
+    metrics["total_count"] = total_function_count
 
     for fn_name in function_names:
         short_name = fn_name.split("-")[-2] if "-" in fn_name else fn_name
@@ -197,7 +200,7 @@ def lambda_handler(event, context):
             "functions": metrics_month["functions"],
         },
         "infrastructure": {
-            "lambdaFunctions": len(metrics_month["functions"]),
+            "lambdaFunctions": metrics_month["total_count"],
             "architecture": "arm64",
             "runtime": "python3.12",
             "dynamodbItems": dynamo["items"],
