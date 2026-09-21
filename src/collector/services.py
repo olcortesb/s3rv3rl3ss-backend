@@ -211,6 +211,7 @@ SERVICES = [
         "icon": "📢",
         "news_keywords": ["SNS", "Simple Notification Service"],
         "blog_feeds": ["https://aws.amazon.com/blogs/compute/feed/", "https://aws.amazon.com/blogs/messaging-and-targeting/feed/"],
+        "docs_limits_url": "https://docs.aws.amazon.com/general/latest/gr/sns.html",
         "static_limits": [
             {"name": "Message size", "value": "256 KB"},
             {"name": "Subscriptions per topic", "value": "12,500,000"},
