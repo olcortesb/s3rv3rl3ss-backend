@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.2...v1.2.3) (2026-09-21)
+
+
+### Bug Fixes
+
+* update services sns quota change ([6bc4805](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/6bc48059948b02e55ad2f855f9b8dd53d6352368))
+
 ## [1.2.2](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.1...v1.2.2) (2026-09-14)
 
 
