@@ -5,7 +5,7 @@ Runs after all collectors finish. Produces changelogs with URLs.
 
 import json
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import boto3
 
