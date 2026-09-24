@@ -393,6 +393,8 @@ Resources:
           TABLE_NAME: !Ref DataTable
           S3_KEY: data/metrics.json
           CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
+          PRICE_PER_GB_SECOND: "0.0000133334"
+          PRICE_PER_REQUEST: "0.00000020000000000000002"
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket

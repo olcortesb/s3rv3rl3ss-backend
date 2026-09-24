@@ -121,9 +121,7 @@ def lambda_handler(event, context):
 
     # Build changelog by comparing with previous data
     old_data = _read_s3_json(S3_KEY)
-    old_changelog = _read_s3_json(CHANGELOG_KEY)
     old_services = old_data.get("services", []) if old_data else []
-    existing = old_changelog.get("changes", []) if old_changelog else []
 
     # Merge news: combine fresh RSS with previously stored news
     old_news_map = {s["id"]: s.get("news", []) for s in old_services}
@@ -141,8 +139,8 @@ def lambda_handler(event, context):
             merged.sort(key=lambda x: x.get("date", ""), reverse=True)
             svc["news"] = merged[:NEWS_LIMIT]
 
-    changelog = build_changelog(old_services, services, existing)
-    new_changes = len(changelog) - len(existing)
+    changelog = build_changelog(old_services, services, [])
+    new_changes = len(changelog)
     print(f"[changelog] {new_changes} new changes detected")
 
     # Persist to DynamoDB
@@ -167,19 +165,6 @@ def lambda_handler(event, context):
         ContentType='application/json',
     )
 
-    # Write changelog JSON
-    changelog_output = {
-        "lastUpdated": date.today().isoformat(),
-        "changes": changelog,
-    }
-
-    s3.put_object(
-        Bucket=BUCKET,
-        Key=CHANGELOG_KEY,
-        Body=json.dumps(changelog_output, indent=2, ensure_ascii=False).encode('utf-8'),
-        ContentType='application/json',
-    )
-
     # Write statistics JSON
     stats = build_statistics(services)
     stats["lastUpdated"] = date.today().isoformat()
@@ -198,7 +183,7 @@ def lambda_handler(event, context):
             cf.create_invalidation(
                 DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
                 InvalidationBatch={
-                    'Paths': {'Quantity': 3, 'Items': ['/data/services-aws.json', '/data/changelog.json', '/data/statistics.json']},
+                    'Paths': {'Quantity': 2, 'Items': [f'/{S3_KEY}', f'/{STATISTICS_KEY}']},
                     'CallerReference': datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ'),
                 }
             )

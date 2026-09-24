@@ -36,8 +36,8 @@ def _invalidate(paths):
         print(f"[cloudfront] invalidation failed: {e}")
 
 # Lambda pricing (arm64, us-east-1)
-PRICE_PER_GB_SECOND = 0.0000133334
-PRICE_PER_REQUEST = 0.20 / 1_000_000
+PRICE_PER_GB_SECOND = float(os.environ.get('PRICE_PER_GB_SECOND', '0.0000133334'))
+PRICE_PER_REQUEST = float(os.environ.get('PRICE_PER_REQUEST', str(0.20 / 1_000_000)))
 
 
 def _get_lambda_metrics(function_prefix, start, end, period):
@@ -220,5 +220,5 @@ def lambda_handler(event, context):
     print(f"[metrics] Today: {metrics_today['invocations']} invocations, {metrics_today['errors']} errors")
     print(f"[metrics] Month: {metrics_month['invocations']} invocations")
 
-    _invalidate(['/data/metrics.json'])
+    _invalidate([f'/{S3_KEY}'])
     return {"statusCode": 200, "body": f"Generated metrics: {metrics_today['invocations']} invocations today"}

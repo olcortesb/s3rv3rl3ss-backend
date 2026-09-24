@@ -143,5 +143,5 @@ def lambda_handler(event, context):
         ContentType="application/json",
     )
 
-    _invalidate(['/data/comparisons.json'])
+    _invalidate([f'/{S3_KEY}'])
     return {"statusCode": 200, "body": f"Generated comparisons with {len(result['categories'])} categories"}

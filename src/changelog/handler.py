@@ -103,5 +103,5 @@ def lambda_handler(event, context):
         results[provider] = {"total": len(changelog), "with_url": with_url}
         print(f"[{provider}] {len(changelog)} changes ({with_url} with URL)")
 
-    _invalidate(['/data/changelog.json', '/data/changelog-gcp.json', '/data/changelog-azure.json'])
+    _invalidate([f'/{v}' for v in CHANGELOG_KEYS.values()])
     return {"statusCode": 200, "body": json.dumps(results)}

@@ -167,8 +167,8 @@ def main():
             resp = cf.describe_stacks(StackName="s3rv3rl3ss-backend")
             outputs = {o["OutputKey"]: o["OutputValue"] for o in resp["Stacks"][0]["Outputs"]}
             args.table = outputs.get("DataTableName")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: could not auto-detect table from CloudFormation: {e}")
 
     if not args.table:
         print("Error: --table required (or deploy stack first)")

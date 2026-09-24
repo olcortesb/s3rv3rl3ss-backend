@@ -206,7 +206,7 @@ def _invalidate():
         cf.create_invalidation(
             DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
             InvalidationBatch={
-                "Paths": {"Quantity": 1, "Items": ["/data/reinvent.json"]},
+                "Paths": {"Quantity": 1, "Items": [f"/{S3_KEY}"]},
                 "CallerReference": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
             },
         )

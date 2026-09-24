@@ -75,19 +75,11 @@ def lambda_handler(event, context):
         resp = s3.get_object(Bucket=BUCKET, Key=S3_KEY)
         old_data = json.loads(resp['Body'].read().decode('utf-8'))
         old_services = old_data.get('services', [])
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[stackit] could not load previous services from S3: {e}")
 
-    existing_changelog = []
-    try:
-        resp = s3.get_object(Bucket=BUCKET, Key=CHANGELOG_KEY)
-        cl_data = json.loads(resp['Body'].read().decode('utf-8'))
-        existing_changelog = cl_data.get('changes', [])
-    except Exception:
-        pass
-
-    changelog = build_changelog(old_services, services, existing_changelog)
-    new_changes = len(changelog) - len(existing_changelog)
+    changelog = build_changelog(old_services, services, [])
+    new_changes = len(changelog)
     print(f"[stackit-changelog] {new_changes} new changes detected")
 
     if new_changes > 0:
@@ -109,13 +101,6 @@ def lambda_handler(event, context):
         ContentType='application/json',
     )
 
-    s3.put_object(
-        Bucket=BUCKET,
-        Key=CHANGELOG_KEY,
-        Body=json.dumps({"lastUpdated": date.today().isoformat(), "changes": changelog}, indent=2, ensure_ascii=False).encode('utf-8'),
-        ContentType='application/json',
-    )
-
     stats = build_statistics(services)
     stats["lastUpdated"] = date.today().isoformat()
     print(f"[stackit-statistics] {stats['summary']['totalServices']} services")
@@ -127,5 +112,5 @@ def lambda_handler(event, context):
         ContentType='application/json',
     )
 
-    _invalidate(['/data/services-stackit.json', '/data/changelog-stackit.json', '/data/statistics-stackit.json'])
+    _invalidate([f'/{S3_KEY}', f'/{STATISTICS_KEY}'])
     return {"statusCode": 200, "body": f"Wrote {len(services)} STACKIT services"}
