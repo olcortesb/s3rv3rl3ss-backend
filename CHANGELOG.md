@@ -1,3 +1,10 @@
+## [1.2.5](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.4...v1.2.5) (2026-09-24)
+
+
+### Bug Fixes
+
+* add datetime/timezone import to changelog handler ([9899682](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/9899682559fc24bdbfa059c66a28dc06e7b02324))
+
 ## [1.2.4](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.3...v1.2.4) (2026-09-24)
 
 
