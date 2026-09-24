@@ -61,8 +61,10 @@ def build_service(svc, live_runtimes=None):
 
     if docs_limits is not None:
         quota_names = {q["name"].lower() for q in quotas}
+        docs_names = {l["name"].lower() for l in docs_limits}
+        static_extra = [l for l in svc.get("static_limits", []) if l["name"].lower() not in quota_names and l["name"].lower() not in docs_names]
         static = [l for l in docs_limits if l["name"].lower() not in quota_names]
-        limits = quotas + static
+        limits = quotas + static + static_extra
     else:
         sources_ok = False
         quota_names = {q["name"].lower() for q in quotas}
