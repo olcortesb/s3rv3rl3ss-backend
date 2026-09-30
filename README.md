@@ -14,9 +14,10 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
    - `06:45` → Comparisons Generator (cross-provider)
    - `06:50` → Changelog Generator (from DynamoDB)
    - `06:55` → Metrics Generator (CloudWatch + DynamoDB)
-   - `07:00` → Tools Collector (scrapes services from LocalStack, MiniStack, Floci, RobotoCore)
+   - `07:00` → Tools Collector (GitHub Releases API + triggers CodeBuild)
+   - `07:05` → re:Invent Generator (active Nov 1 – Dec 7)
 2. Each **Collector** queries real APIs + static data → writes JSON to S3 + persists to DynamoDB
-3. **Tools Collector** also triggers a **CodeBuild** project that `docker pull`s each tool image, measures startup time, memory, and image size, then writes `tools-docker.json` to S3
+3. **Tools Collector** triggers a **CodeBuild** project that `docker pull`s each tool image, measures startup time, memory, and image size, then writes `tools-docker.json` to S3
 4. **S3 ObjectCreated** event → **EventBridge** → triggers **CommitterFunction**
 5. **CommitterFunction** uses the GitHub Contents API to commit the file directly (1 commit per file)
 6. **AWS Amplify** detects the push and auto-deploys the frontend
