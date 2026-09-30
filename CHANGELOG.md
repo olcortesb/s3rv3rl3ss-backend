@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.5...v1.3.0) (2026-09-30)
+
+
+### Features
+
+* update architecture diagram and changelog ([e0c8a2c](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/e0c8a2c32aaf325fdab009f6e2c6c4f320a1188d))
+
 ## [1.2.5](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.4...v1.2.5) (2026-09-24)
 
 
