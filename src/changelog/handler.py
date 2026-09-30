@@ -31,11 +31,12 @@ def _invalidate(paths):
     except Exception as e:
         print(f"[cloudfront] invalidation failed: {e}")
 
-PROVIDERS = ["aws", "gcp", "azure"]
+PROVIDERS = ["aws", "gcp", "azure", "stackit"]
 CHANGELOG_KEYS = {
     "aws": "data/changelog.json",
     "gcp": "data/changelog-gcp.json",
     "azure": "data/changelog-azure.json",
+    "stackit": "data/changelog-stackit.json",
 }
 
 

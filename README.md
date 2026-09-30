@@ -4,7 +4,7 @@ Multi-cloud data pipeline that collects serverless service quotas, limits, prici
 
 ## How it works
 
-![Architecture](image.png)
+![Archiecture](/docs/arhitecture.png)
 
 1. **EventBridge Schedules** trigger 9 Lambda functions daily (staggered):
    - `06:00` → AWS Collector (32 services)
