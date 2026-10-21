@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.3.1...v1.4.0) (2026-10-21)
+
+
+### Features
+
+* allow custom date via event payload for backfill ([bd44fa2](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/bd44fa26a490d0d1db1d585f2529c613684c02f3))
+* visits counter — WAF, LogsBucket, budget alerts, lambda error alarm ([6b8e80c](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/6b8e80c97b77a2b24c1e2bca8795355e45f5dc3c))
+
 ## [1.3.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.3.0...v1.3.1) (2026-10-21)
 
 
