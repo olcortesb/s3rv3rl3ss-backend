@@ -449,6 +449,104 @@ Resources:
             Description: Every 2h — handler skips based on date (active Nov 1 - Dec 7)
             Enabled: true
 
+  LogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub s3rv3rl3ss-logs-${AWS::AccountId}
+      AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteLogsAfter30Days
+            Status: Enabled
+            ExpirationInDays: 30
+
+  LogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub '${LogsBucket.Arn}/cloudfront/*'
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+          - Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt LogsBucket.Arn
+
+  SiteWAF:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: s3rv3rl3ss-waf
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: s3rv3rl3ssWAF
+      Rules:
+        - Name: RateLimitPerIP
+          Priority: 1
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitPerIP
+          Statement:
+            RateBasedStatement:
+              Limit: 300
+              AggregateKeyType: IP
+
+  VisitsCollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/visits-collector/
+      Description: Processes CloudFront logs to count daily visits and persist history
+      Architectures:
+        - arm64
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          LOGS_BUCKET: !Ref LogsBucket
+          DATA_BUCKET: !Ref DataBucket
+          TABLE_NAME: !Ref DataTable
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
+          S3_KEY: data/visits.json
+          MAX_FILE_SIZE_MB: "100"
+          CHUNK_SIZE_MB: "10"
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref LogsBucket
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DataTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: '*'
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 5 * * ? *)
+            Description: Processes yesterday's CloudFront logs daily at 05:00 UTC
+            Enabled: true
+
   DataBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -479,6 +577,11 @@ Resources:
       DistributionConfig:
         Enabled: true
         Comment: s3rv3rl3ss data CDN
+        WebACLId: !GetAtt SiteWAF.Arn
+        Logging:
+          Bucket: !GetAtt LogsBucket.DomainName
+          Prefix: cloudfront/
+          IncludeCookies: false
         DefaultCacheBehavior:
           TargetOriginId: DataBucketOrigin
           ViewerProtocolPolicy: https-only
@@ -540,6 +643,224 @@ Resources:
         Enabled: true
 
 
+  CostBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: s3rv3rl3ss-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 5
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: olcortesb@gmail.com
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: olcortesb@gmail.com
+
+  LambdaErrorsAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: s3rv3rl3ss-lambda-errors
+      Subscription:
+        - Protocol: email
+          Endpoint: olcortesb@gmail.com
+
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: s3rv3rl3ss-lambda-errors
+      AlarmDescription: Lambda errors > 3 in a day across the pipeline
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref LambdaErrorsAlarmTopic
+
+  PipelineDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: s3rv3rl3ss-pipeline
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": { "markdown": "## s3rv3rl3ss pipeline — Lambda invocations, errors & duration" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 1, "width": 12, "height": 6,
+              "properties": {
+                "title": "Invocations per function",
+                "view": "timeSeries",
+                "stat": "Sum",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${CollectorFunction}", {"label": "AWS Collector"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${GcpCollectorFunction}", {"label": "GCP Collector"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${AzureCollectorFunction}", {"label": "Azure Collector"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${StackitCollectorFunction}", {"label": "STACKIT Collector"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ComparisonsFunction}", {"label": "Comparisons"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ChangelogFunction}", {"label": "Changelog"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${MetricsFunction}", {"label": "Metrics"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ToolsCollectorFunction}", {"label": "Tools"}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ReinventFunction}", {"label": "re:Invent"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 1, "width": 12, "height": 6,
+              "properties": {
+                "title": "Errors per function",
+                "view": "timeSeries",
+                "stat": "Sum",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/Lambda", "Errors", "FunctionName", "${CollectorFunction}", {"label": "AWS Collector", "color": "#d62728"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${GcpCollectorFunction}", {"label": "GCP Collector", "color": "#ff7f0e"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${AzureCollectorFunction}", {"label": "Azure Collector", "color": "#9467bd"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${StackitCollectorFunction}", {"label": "STACKIT Collector", "color": "#2ca02c"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${ComparisonsFunction}", {"label": "Comparisons"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${ChangelogFunction}", {"label": "Changelog"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${MetricsFunction}", {"label": "Metrics"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${ToolsCollectorFunction}", {"label": "Tools"}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "${ReinventFunction}", {"label": "re:Invent"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 7, "width": 12, "height": 6,
+              "properties": {
+                "title": "Duration (ms) — collectors",
+                "view": "timeSeries",
+                "stat": "Average",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/Lambda", "Duration", "FunctionName", "${CollectorFunction}", {"label": "AWS Collector"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${GcpCollectorFunction}", {"label": "GCP Collector"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${AzureCollectorFunction}", {"label": "Azure Collector"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${StackitCollectorFunction}", {"label": "STACKIT Collector"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 7, "width": 12, "height": 6,
+              "properties": {
+                "title": "Duration (ms) — generators",
+                "view": "timeSeries",
+                "stat": "Average",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/Lambda", "Duration", "FunctionName", "${ComparisonsFunction}", {"label": "Comparisons"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${ChangelogFunction}", {"label": "Changelog"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${MetricsFunction}", {"label": "Metrics"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${ToolsCollectorFunction}", {"label": "Tools"}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "${ReinventFunction}", {"label": "re:Invent"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 13, "width": 8, "height": 6,
+              "properties": {
+                "title": "DynamoDB — read/write capacity",
+                "view": "timeSeries",
+                "stat": "Sum",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "${DataTable}", {"label": "Read CU"}],
+                  ["AWS/DynamoDB", "ConsumedWriteCapacityUnits", "TableName", "${DataTable}", {"label": "Write CU"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 13, "width": 8, "height": 6,
+              "properties": {
+                "title": "S3 — objects",
+                "view": "timeSeries",
+                "stat": "Average",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/S3", "NumberOfObjects", "BucketName", "${DataBucket}", "StorageType", "AllStorageTypes", {"label": "Objects"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 13, "width": 8, "height": 6,
+              "properties": {
+                "title": "CodeBuild — builds",
+                "view": "timeSeries",
+                "stat": "Sum",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/CodeBuild", "Builds", "ProjectName", "s3rv3rl3ss-tools-docker", {"label": "Builds"}],
+                  ["AWS/CodeBuild", "FailedBuilds", "ProjectName", "s3rv3rl3ss-tools-docker", {"label": "Failed", "color": "#d62728"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 19, "width": 12, "height": 6,
+              "properties": {
+                "title": "CloudFront — requests & bytes",
+                "view": "timeSeries",
+                "stat": "Sum",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/CloudFront", "Requests", "DistributionId", "${DataDistribution}", "Region", "Global", {"label": "Requests"}],
+                  ["AWS/CloudFront", "BytesDownloaded", "DistributionId", "${DataDistribution}", "Region", "Global", {"label": "Bytes Downloaded", "yAxis": "right"}]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 19, "width": 12, "height": 6,
+              "properties": {
+                "title": "CloudFront — error rates",
+                "view": "timeSeries",
+                "stat": "Average",
+                "period": 86400,
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/CloudFront", "4xxErrorRate", "DistributionId", "${DataDistribution}", "Region", "Global", {"label": "4xx Error Rate", "color": "#ff7f0e"}],
+                  ["AWS/CloudFront", "5xxErrorRate", "DistributionId", "${DataDistribution}", "Region", "Global", {"label": "5xx Error Rate", "color": "#d62728"}]
+                ]
+              }
+            }
+          ]
+        }
+
 Outputs:
   DataBucketName:
     Value: !Ref DataBucket
@@ -568,3 +889,12 @@ Outputs:
     Value: !GetAtt ReinventFunction.Arn
   DataTableName:
     Value: !Ref DataTable
+  VisitsCollectorFunctionArn:
+    Value: !GetAtt VisitsCollectorFunction.Arn
+  LogsBucketName:
+    Value: !Ref LogsBucket
+  WAFArn:
+    Value: !GetAtt SiteWAF.Arn
+  DashboardUrl:
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=s3rv3rl3ss-pipeline'
+    Description: CloudWatch dashboard URL
