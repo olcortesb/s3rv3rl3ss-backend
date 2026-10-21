@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.3.0...v1.3.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* use distribution ID in CloudFront log prefix ([2983736](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/2983736fa765385a679f411c40dd4529d2a57be9))
+
 # [1.3.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.2.5...v1.3.0) (2026-09-30)
 
 
