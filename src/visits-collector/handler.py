@@ -27,7 +27,11 @@ PK = "SITE#s3rv3rl3ss"
 
 
 def lambda_handler(event, context):
-    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+    target_date = event.get("date") if event else None
+    if target_date:
+        yesterday = target_date
+    else:
+        yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     print(f"Processing logs for {yesterday}")
 
     visits = process_logs(yesterday)
