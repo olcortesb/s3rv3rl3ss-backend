@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.4.1...v1.5.0) (2026-11-04)
+
+
+### Features
+
+* **security:** add security bulletins pipeline for AWS and GCP ([4816a64](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/4816a644ce3babddea0696edfafb56669963be1a))
+
 ## [1.4.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.4.0...v1.4.1) (2026-11-04)
 
 
