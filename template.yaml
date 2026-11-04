@@ -45,6 +45,7 @@ Resources:
           TABLE_NAME: !Ref DataTable
           CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
           REINVENT_FUNCTION_NAME: !Ref ReinventFunction
+          SECURITY_KEY: data/security.json
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
@@ -84,6 +85,7 @@ Resources:
           STATISTICS_KEY: data/statistics-gcp.json
           TABLE_NAME: !Ref DataTable
           CLOUDFRONT_DISTRIBUTION_ID: !Ref DataDistribution
+          SECURITY_KEY: data/security.json
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket

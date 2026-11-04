@@ -58,6 +58,47 @@ def write_changes(provider, changes):
     return written
 
 
+def write_security_news(bulletins):
+    """Persist GCP security bulletins and incidents to DynamoDB."""
+    table = _get_table()
+    if not table or not bulletins:
+        return 0
+
+    today = date.today().isoformat()
+    items = {}
+
+    for bulletin in bulletins:
+        provider = bulletin.get("provider", "gcp")
+        h = _hash4(bulletin.get("title", "") + bulletin.get("bulletin_id", "") + bulletin.get("date", ""))
+        pk = f"{provider}#security"
+        sk = f"NEWS#{bulletin.get('date', today)}#{h}"
+        item = {
+            "pk": pk,
+            "sk": sk,
+            "gsi1pk": f"NEWS#{provider}",
+            "gsi1sk": f"{bulletin.get('date', today)}#security",
+            "title": bulletin.get("title", ""),
+            "date": bulletin.get("date", today),
+            "tag": bulletin.get("tag", "security"),
+            "provider": provider,
+        }
+        if bulletin.get("url"):
+            item["url"] = bulletin["url"]
+        if bulletin.get("severity"):
+            item["severity"] = bulletin["severity"]
+        if bulletin.get("bulletin_id"):
+            item["bulletin_id"] = bulletin["bulletin_id"]
+        items[(pk, sk)] = item
+
+    written = 0
+    with table.batch_writer() as writer:
+        for item in items.values():
+            writer.put_item(Item=item)
+            written += 1
+
+    return written
+
+
 def update_service_data(provider, services):
     """Update current state in DynamoDB (LIMIT, NEWS, RUNTIME, PRICING)."""
     table = _get_table()

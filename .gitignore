@@ -232,4 +232,6 @@ scripts/check.sh
 REINVENT.md
 *.csv
 burbujIA.md
+rag-analysis.md
+RAG.md
 scripts/deploy.sh

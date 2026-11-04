@@ -5,11 +5,11 @@ from datetime import date, datetime, timezone
 import boto3
 
 from services import SERVICES
-from parsers.news import fetch_news
+from parsers.news import fetch_news, fetch_gcp_security_bulletins, fetch_gcp_incidents
 from parsers.pricing import fetch_pricing
 from parsers.statistics import build_statistics
 from parsers.changelog import build_changelog
-from parsers.dynamo import write_changes, update_service_data
+from parsers.dynamo import write_changes, update_service_data, write_security_news
 
 s3 = boto3.client('s3')
 cf = boto3.client('cloudfront')
@@ -19,6 +19,7 @@ S3_KEY = os.environ.get('S3_KEY', 'data/services-gcp.json')
 STATISTICS_KEY = os.environ.get('STATISTICS_KEY', 'data/statistics-gcp.json')
 CHANGELOG_KEY = os.environ.get('CHANGELOG_KEY', 'data/changelog-gcp.json')
 CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
+SECURITY_KEY = os.environ.get('SECURITY_KEY', 'data/security.json')
 
 
 def _invalidate(paths):
@@ -121,4 +122,40 @@ def lambda_handler(event, context):
     )
 
     _invalidate([f'/{S3_KEY}', f'/{STATISTICS_KEY}'])
+
+    # Fetch GCP security data
+    gcp_bulletins = fetch_gcp_security_bulletins()
+    gcp_incidents = fetch_gcp_incidents()
+    gcp_security = gcp_bulletins + gcp_incidents
+    print(f"[gcp-security] {len(gcp_bulletins)} bulletins, {len(gcp_incidents)} incidents")
+
+    # Persist GCP security to DynamoDB
+    dynamo_sec = write_security_news(gcp_security)
+    print(f"[dynamo] {dynamo_sec} gcp security items written")
+
+    # Merge with existing AWS security data from S3
+    existing_security = {"updated_at": "", "bulletins": []}
+    try:
+        resp = s3.get_object(Bucket=BUCKET, Key=SECURITY_KEY)
+        existing_security = json.loads(resp['Body'].read().decode('utf-8'))
+    except Exception as e:
+        print(f"[gcp-security] could not load existing security.json: {e}")
+
+    aws_bulletins = [b for b in existing_security.get("bulletins", []) if b.get("provider") == "aws"]
+    merged = aws_bulletins + gcp_security
+    merged.sort(key=lambda x: x.get("date", ""), reverse=True)
+
+    security_output = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "bulletins": merged,
+    }
+    s3.put_object(
+        Bucket=BUCKET,
+        Key=SECURITY_KEY,
+        Body=json.dumps(security_output, indent=2, ensure_ascii=False).encode('utf-8'),
+        ContentType='application/json',
+    )
+    print(f"[gcp-security] security.json updated with {len(merged)} total items")
+    _invalidate([f'/{SECURITY_KEY}'])
+
     return {"statusCode": 200, "body": f"Wrote {len(services)} GCP services"}

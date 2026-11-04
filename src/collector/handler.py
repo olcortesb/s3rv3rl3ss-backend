@@ -6,14 +6,14 @@ import boto3
 
 from services import SERVICES
 from parsers.quotas import list_quotas
-from parsers.news import fetch_news, NEWS_LIMIT
+from parsers.news import fetch_news, fetch_security_news, NEWS_LIMIT
 from parsers.runtimes import fetch_runtimes
 from parsers.docs_limits import fetch_docs_limits
 from parsers.changelog import build_changelog
 from parsers.integrations import fetch_integrations
 from parsers.pricing import fetch_pricing
 from parsers.statistics import build_statistics
-from parsers.dynamo import write_changes, update_service_data
+from parsers.dynamo import write_changes, update_service_data, write_security_news
 
 s3 = boto3.client('s3')
 cf = boto3.client('cloudfront')
@@ -25,6 +25,7 @@ CHANGELOG_KEY = os.environ.get('CHANGELOG_KEY', 'data/changelog.json')
 STATISTICS_KEY = os.environ.get('STATISTICS_KEY', 'data/statistics.json')
 CLOUDFRONT_DISTRIBUTION_ID = os.environ.get('CLOUDFRONT_DISTRIBUTION_ID', '')
 REINVENT_FUNCTION_NAME = os.environ.get('REINVENT_FUNCTION_NAME', '')
+SECURITY_KEY = os.environ.get('SECURITY_KEY', 'data/security.json')
 
 
 def _read_s3_json(key):
@@ -177,13 +178,30 @@ def lambda_handler(event, context):
         ContentType='application/json',
     )
 
+    # Write security bulletins JSON
+    security_bulletins = fetch_security_news()
+    security_output = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "bulletins": security_bulletins,
+    }
+    s3.put_object(
+        Bucket=BUCKET,
+        Key=SECURITY_KEY,
+        Body=json.dumps(security_output, indent=2, ensure_ascii=False).encode('utf-8'),
+        ContentType='application/json',
+    )
+    print(f"[security] {len(security_bulletins)} bulletins written")
+    dynamo_security = write_security_news(security_bulletins)
+    print(f"[dynamo] {dynamo_security} security bulletins written")
+
     # Invalidate CloudFront cache
     if CLOUDFRONT_DISTRIBUTION_ID:
         try:
+            paths = [f'/{S3_KEY}', f'/{STATISTICS_KEY}', f'/{SECURITY_KEY}']
             cf.create_invalidation(
                 DistributionId=CLOUDFRONT_DISTRIBUTION_ID,
                 InvalidationBatch={
-                    'Paths': {'Quantity': 2, 'Items': [f'/{S3_KEY}', f'/{STATISTICS_KEY}']},
+                    'Paths': {'Quantity': len(paths), 'Items': paths},
                     'CallerReference': datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ'),
                 }
             )
