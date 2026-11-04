@@ -234,4 +234,5 @@ REINVENT.md
 burbujIA.md
 rag-analysis.md
 RAG.md
-scripts/deploy.shresponse.json
+scripts/deploy.sh
+response.json
