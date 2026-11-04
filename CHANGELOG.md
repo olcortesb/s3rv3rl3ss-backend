@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.4.0...v1.4.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **security:** fix GCP bulletins date, severity, CVEs, incident URLs and add description ([170dfb5](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/170dfb5af0a2d4d40083111b64fd46142cfa49fa))
+
 # [1.4.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.3.1...v1.4.0) (2026-10-21)
 
 
