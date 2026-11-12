@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.5.0...v1.5.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* add Cache-Control 1h to tools.json S3 upload ([68cc204](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/68cc204b05de3c7e7a1d885d6c679b3780bb24ef))
+
 # [1.5.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.4.1...v1.5.0) (2026-11-04)
 
 
