@@ -14,72 +14,76 @@ phases:
       - |
         cat > /tmp/measure.sh << 'EOF'
         #!/bin/bash
-        set -e
-
-        RESULTS="[]"
 
         measure_tool() {
           local id=$1
           local image=$2
           local port=${3:-4566}
           local health_path=${4:-"/_localstack/health"}
+          local use_https=${5:-"false"}
 
-          echo "=== $id: pulling $image ==="
-          docker pull "$image" 2>/dev/null
+          echo "=== $id: pulling $image ===" >&2
+          docker pull "$image" 2>/dev/null || { echo "{\"id\":\"$id\",\"error\":\"pull failed\"}"; return; }
 
-          # Get image size
           SIZE=$(docker images "$image" --format "{{.Size}}" | head -1)
 
-          # Run container
-          echo "=== $id: starting container ==="
-          CONTAINER_ID=$(docker run -d -p ${port}:4566 "$image" 2>/dev/null)
+          echo "=== $id: starting container ===" >&2
+          CONTAINER_ID=$(docker run -d -p ${port}:${port} "$image" 2>/dev/null)
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "{\"id\":\"$id\",\"error\":\"container start failed\"}"
+            return
+          fi
 
-          # Wait for ready
           STARTUP_START=$(date +%s%N)
           for i in $(seq 1 60); do
-            if curl -sf "http://localhost:${port}${health_path}" > /dev/null 2>&1; then
-              break
+            if [ "$use_https" = "true" ]; then
+              curl -sfk "https://localhost:${port}${health_path}" > /dev/null 2>&1 && break
+            else
+              curl -sf "http://localhost:${port}${health_path}" > /dev/null 2>&1 && break
             fi
             sleep 0.5
           done
           STARTUP_END=$(date +%s%N)
           STARTUP_MS=$(( (STARTUP_END - STARTUP_START) / 1000000 ))
 
-          # Get memory
           MEMORY=$(docker stats --no-stream --format "{{.MemUsage}}" "$CONTAINER_ID" 2>/dev/null | cut -d'/' -f1 | xargs)
 
-          # Try to get services list
-          SERVICES=""
-          HEALTH=$(curl -sf "http://localhost:${port}${health_path}" 2>/dev/null || echo "{}")
+          if [ "$use_https" = "true" ]; then
+            HEALTH=$(curl -sfk "https://localhost:${port}${health_path}" 2>/dev/null || echo "{}")
+          else
+            HEALTH=$(curl -sf "http://localhost:${port}${health_path}" 2>/dev/null || echo "{}")
+          fi
 
-          # Stop container
           docker stop "$CONTAINER_ID" > /dev/null 2>&1
           docker rm "$CONTAINER_ID" > /dev/null 2>&1
 
           echo "{\"id\":\"$id\",\"imageSize\":\"$SIZE\",\"startupMs\":$STARTUP_MS,\"memoryIdle\":\"$MEMORY\",\"health\":$HEALTH}"
         }
 
-        echo "[" > /tmp/results.json
+        RESULTS=()
 
-        # LocalStack
-        R1=$(measure_tool "localstack" "localstack/localstack:latest" 4566 "/_localstack/health")
-        echo "$R1," >> /tmp/results.json
+        R=$(measure_tool "localstack" "localstack/localstack:latest" 4566 "/_localstack/health")
+        RESULTS+=("$R")
 
-        # MiniStack
-        R2=$(measure_tool "ministack" "ministackorg/ministack:latest" 4567 "/_ministack/health")
-        echo "$R2," >> /tmp/results.json
+        R=$(measure_tool "ministack" "ministackorg/ministack:latest" 4567 "/_ministack/health")
+        RESULTS+=("$R")
 
-        # Floci
-        R3=$(measure_tool "floci" "floci/floci:latest" 4568 "/_localstack/health")
-        echo "$R3," >> /tmp/results.json
+        R=$(measure_tool "floci" "floci/floci:latest" 4568 "/_localstack/health")
+        RESULTS+=("$R")
 
-        # RobotoCore
-        R4=$(measure_tool "robotocore" "jackdanger/robotocore:latest" 4569 "/_robotocore/health")
-        echo "$R4" >> /tmp/results.json
+        R=$(measure_tool "robotocore" "jackdanger/robotocore:latest" 4569 "/_robotocore/health")
+        RESULTS+=("$R")
 
-        echo "]" >> /tmp/results.json
+        # Build JSON array manually to avoid malformed output on partial failures
+        printf '[' > /tmp/results.json
+        for i in "${!RESULTS[@]}"; do
+          if [ $i -gt 0 ]; then printf ',' >> /tmp/results.json; fi
+          printf '%s' "${RESULTS[$i]}" >> /tmp/results.json
+        done
+        printf ']' >> /tmp/results.json
 
-        cat /tmp/results.json
+        echo "=== Final results ===" >&2
+        cat /tmp/results.json >&2
         EOF
         chmod +x /tmp/measure.sh
         bash /tmp/measure.sh

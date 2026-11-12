@@ -16,6 +16,7 @@ from parsers import localstack as localstack_parser
 from parsers import ministack as ministack_parser
 from parsers import floci as floci_parser
 from parsers import robotocore as robotocore_parser
+from parsers import awsemulator as awsemulator_parser
 from parsers.normalize import normalize_list, to_display_name
 
 s3 = boto3.client("s3")
@@ -34,6 +35,7 @@ PARSERS = {
     "ministack": ministack_parser,
     "floci": floci_parser,
     "robotocore": robotocore_parser,
+    "aws-emulator": awsemulator_parser,
 }
 
 
@@ -143,7 +145,6 @@ def lambda_handler(event, context):
                 service_meta["moto"] = normalize_list(service_meta["moto"])
 
         # Merge Docker results if available
-        docker_data = docker_results.get(tool_id, {})
         performance = tool.get("performance", {})
         if docker_data:
             performance = {

@@ -92,5 +92,23 @@
       "IAM", "KMS", "EventBridge", "CloudWatch"
     ],
     "paidServices": []
+  },
+  {
+    "id": "aws-emulator",
+    "name": "AWS Emulator",
+    "description": "Official AWS local emulator. Server mode (CLI/SDK via env vars) and embedded mode (Rust tests). No account needed, no additional service fee.",
+    "url": "https://aws.amazon.com/products/developer-tools/emulator/",
+    "repo": "aws/aws-emulator",
+    "technology": ["Rust"],
+    "license": "CC0-1.0",
+    "price": "Free",
+    "performance": {},
+    "services": [
+      "s3", "sqs", "sns", "dynamodb", "lambda", "iam", "sts",
+      "cloudwatch", "logs", "events", "kinesis", "secretsmanager",
+      "ssm", "kms", "ec2", "ecr", "ecs", "eks", "rds",
+      "apigateway", "apigatewayv2", "cloudformation", "stepfunctions"
+    ],
+    "paidServices": []
   }
 ]
