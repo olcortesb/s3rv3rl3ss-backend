@@ -193,6 +193,7 @@ def lambda_handler(event, context):
         Key=S3_KEY,
         Body=json.dumps(output, indent=2, ensure_ascii=False).encode("utf-8"),
         ContentType="application/json",
+        CacheControl="max-age=3600",
     )
 
     return {"statusCode": 200, "body": f"Updated {len(output_tools)} tools"}
