@@ -451,6 +451,36 @@ Resources:
             Description: Every 2h — handler skips based on date (active Nov 1 - Dec 7)
             Enabled: true
 
+  TelegramNotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: src/telegram-notifier/
+      Description: Sends daily changelog and security bulletins to Telegram channels
+      Architectures:
+        - arm64
+      Timeout: 120
+      MemorySize: 128
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref DataBucket
+          TELEGRAM_SECRET_ARN: !Sub 'arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:s3rv3rl3ss/telegram'
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DataBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub 'arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:s3rv3rl3ss/telegram*'
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(10 7 * * ? *)
+            Description: Sends Telegram notifications after pipeline completes
+            Enabled: true
+
   LogsBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -893,6 +923,8 @@ Outputs:
     Value: !Ref DataTable
   VisitsCollectorFunctionArn:
     Value: !GetAtt VisitsCollectorFunction.Arn
+  TelegramNotifierFunctionArn:
+    Value: !GetAtt TelegramNotifierFunction.Arn
   LogsBucketName:
     Value: !Ref LogsBucket
   WAFArn:
