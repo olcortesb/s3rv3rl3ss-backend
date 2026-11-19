@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.5.1...v1.6.0) (2026-11-19)
+
+
+### Features
+
+* add Telegram notifier Lambda for daily changelog and security bulletins ([c26b323](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/c26b323b7ecab685a9c5f8372e0c292dd121e733))
+
 ## [1.5.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.5.0...v1.5.1) (2026-11-12)
 
 
