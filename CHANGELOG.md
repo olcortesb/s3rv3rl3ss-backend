@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.6.1...v1.6.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* add lambda.olcortesb.com to CORS allowed origins ([9139221](https://github.com/olcortesb/s3rv3rl3ss-backend/commit/91392215aac34ca0c38ba454d8d1227d9587cf20))
+
 ## [1.6.1](https://github.com/olcortesb/s3rv3rl3ss-backend/compare/v1.6.0...v1.6.1) (2026-11-23)
 
 
