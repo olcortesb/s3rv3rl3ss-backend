@@ -641,6 +641,7 @@ Resources:
             Items:
               - https://s3rv3rl3ss.olcortesb.com
               - https://main.d1jc3hentd657l.amplifyapp.com
+              - https://lambda.olcortesb.com
           OriginOverride: true
 
   DataTable:
